@@ -1,0 +1,57 @@
+# -*- coding: utf-8 -*-
+
+[server]
+instances = first second
+host      = 127.0.0.1
+port      = 8349
+debug     = true
+
+[module]
+parsers = juman mecab
+dbs     = dictdb redisdb
+
+[textgen:first]
+retry    = 50
+s_thresh = 0.0
+n_recent = 100
+
+[textgen:second]
+retry    = 50
+s_thresh = 0.0
+n_recent = 100
+
+[markov:first]
+level    = 2
+maxchain = 50
+
+[markov:second]
+level    = 3
+maxchain = 50
+
+[parser:morph:first]
+type   = Juman
+path   = /usr/bin/juman
+encode = utf-8
+
+[parser:morph:second]
+type = Mecab
+
+[db:markov:first]
+type = Redis
+host = localhost
+port = 6379
+db   = 0
+
+[db:markov:second]
+type = Dict
+path = /path/to/markov.json
+
+[db:entrypoint:first]
+type = Redis
+host = localhost
+port = 6379
+db   = 1
+
+[db:entrypoint:second]
+type = Dict
+path = /path/to/entrypoint.json
