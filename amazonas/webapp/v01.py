@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import json
 import flask
 
 import amazonas.webapp.instance
@@ -27,7 +26,12 @@ def root(instance):
     if 'text' not in data:
         flask.abort(400)
 
-    instance.learn(data['text'])
+    if type(data['text']) is not list:
+        flask.abort(400)
+
+    for line in data['text']:
+        instance.learn(line)
+
     return flask.Response(status=204)
 
 
@@ -41,12 +45,10 @@ def maps(instance):
     data = flask.request.get_json()
     if 'key' not in data:
         flask.abort(400)
-    try:
-        key = tuple(json.loads(data['key']))
-    except:
+    if type(data['key']) is not list:
         flask.abort(400)
 
-    vals = instance.markov.db.get(key)
+    vals = instance.markov.db.get(tuple(data['key']))
     if not vals:
         flask.abort(404)
 
