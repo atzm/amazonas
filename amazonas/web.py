@@ -13,7 +13,7 @@ def main():
     import webapp.instance
 
     if len(sys.argv) < 2:
-        raise SystemExit('syntax: %s <conffile>')
+        raise SystemExit('syntax: %s <conffile>' % sys.argv[0])
 
     config.read(sys.argv[1])
     util.loadmodules()
