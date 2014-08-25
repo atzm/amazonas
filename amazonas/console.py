@@ -5,6 +5,7 @@ import json
 import fcntl
 import shlex
 import getopt
+import urllib
 import urllib2
 import inspect
 import readline
@@ -101,7 +102,9 @@ class Command(object):
             print('syntax: maps <key1> <key2> ...')
             return
 
-        code, body = self.client.post(self.path('/maps'), {'key': args})
+        keys = json.dumps(args, ensure_ascii=False).encode('utf-8')
+        path = self.path('/'.join(('/keys', urllib.quote(keys, safe=''))))
+        code, body = self.client.get(path)
         if code == 200:
             for v in body.get('values', []):
                 print(v)

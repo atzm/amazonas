@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import json
 import flask
 
 import amazonas.webapp.instance
@@ -35,30 +36,31 @@ def root(instance):
     return flask.Response(status=204)
 
 
-@mod.route('/<instance>/maps', methods=['POST', 'DELETE'])
-def maps(instance):
+@mod.route('/<instance>/keys')
+def keys(instance):
+    instance = getinstance(instance)
+    return flask.jsonify(keys=instance.markov.db.keys())
+
+
+@mod.route('/<instance>/keys/<path:keys>', methods=['GET', 'DELETE'])
+def maps(instance, keys):
     instance = getinstance(instance)
 
     if flask.request.method == 'DELETE':
         flask.abort(501)  # not implemented
 
-    data = flask.request.get_json()
-    if 'key' not in data:
+    try:
+        keys = json.loads(keys)
+    except:
         flask.abort(400)
-    if type(data['key']) is not list:
+    if type(keys) is not list:
         flask.abort(400)
 
-    vals = instance.markov.db.get(tuple(data['key']))
+    vals = instance.markov.db.get(tuple(keys))
     if not vals:
         flask.abort(404)
 
     return flask.jsonify(values=vals)
-
-
-@mod.route('/<instance>/keys')
-def keys(instance):
-    instance = getinstance(instance)
-    return flask.jsonify(keys=instance.markov.db.keys())
 
 
 @mod.route('/<instance>/entrypoints')
