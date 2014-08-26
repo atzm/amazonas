@@ -4,7 +4,11 @@ import re
 import sys
 import shlex
 import logging
+import contextlib
+
 import irc.bot
+import irc.buffer
+import irc.client
 
 import util
 import config
@@ -163,6 +167,33 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         return True
 
 
+# XXX: python-irc is hardcoded the encoding utf-8 ...
+@contextlib.contextmanager
+def encoding(encode):
+    orig_encode = irc.buffer.DecodingLineBuffer.encoding
+    orig_send_raw = irc.client.ServerConnection.send_raw
+
+    def send_raw(self, string, *args):
+        orig_sender = self.socket.send
+
+        def sender(data, *a):
+            return orig_sender(unicode(data, 'utf-8').encode(encode), *a)
+
+        try:
+            self.socket.send = sender
+            return orig_send_raw(self, string, *args)
+        finally:
+            self.socket.send = orig_sender
+
+    try:
+        irc.buffer.DecodingLineBuffer.encoding = encode
+        irc.client.ServerConnection.send_raw = send_raw
+        yield
+    finally:
+        irc.buffer.DecodingLineBuffer.encoding = orig_encode
+        irc.client.ServerConnection.send_raw = orig_send_raw
+
+
 def main():
     logging.basicConfig(level=logging.INFO)
     config.read(sys.argv[1])
@@ -189,8 +220,9 @@ def main():
         for evt in events:
             logging.info('    - %s.%s', evt.__module__, evt.__name__)
 
-    bot = IRCBot()
-    bot.start()
+    with encoding(config.get('irc', 'encode')):
+        bot = IRCBot()
+        bot.start()
 
 
 if __name__ == '__main__':
