@@ -6,50 +6,11 @@ import fcntl
 import shlex
 import getopt
 import urllib
-import urllib2
 import inspect
 import readline
 import traceback
 
-
-class HTTPClient(object):
-    def __init__(self, host, port):
-        self.host = host
-        self.port = port
-
-    def url(self, path):
-        return ''.join(('http://', self.host, ':', str(self.port), path))
-
-    def get(self, path):
-        return self.request('GET', path)
-
-    def put(self, path, body):
-        return self.request('PUT', path, body)
-
-    def post(self, path, body):
-        return self.request('POST', path, body)
-
-    def request(self, method, path, body=None, headers={}):
-        if body is not None:
-            body = json.dumps(body, ensure_ascii=False).encode('utf-8')
-            headers = headers.copy()
-            headers.update({'Content-Type': 'application/json; charset=UTF-8'})
-
-        try:
-            code, info, body = self._request(method, path, body, headers)
-            ctype = info.getheader('content-type', '')
-            if ctype.startswith('application/json'):
-                return code, json.loads(body)
-            return code, body
-        except urllib2.HTTPError as e:
-            return e.getcode(), ''
-
-    def _request(self, method, path, body, headers={}):
-        url = self.url(path)
-        req = urllib2.Request(url, body, headers)
-        req.get_method = lambda: str(method)
-        obj = urllib2.urlopen(req)
-        return obj.getcode(), obj.info(), obj.read()
+import util
 
 
 class Command(object):
@@ -57,7 +18,7 @@ class Command(object):
 
     def __init__(self, instance, host, port):
         self.instance = instance
-        self.client = HTTPClient(host, port)
+        self.client = util.HTTPClient(host, port)
 
     def cmd(self, cmd):
         return getattr(self, 'cmd_' + cmd, None)

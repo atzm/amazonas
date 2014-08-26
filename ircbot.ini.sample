@@ -1,0 +1,74 @@
+# -*- coding: utf-8 -*-
+
+[irc]
+server       = 127.0.0.1
+port         = 6667
+nick         = amazonas
+channel      = #amazonas
+encode       = utf-8
+quit_message = さようなら
+
+[plugin]
+path = /path/to/your/plugin/dir
+
+[event:join:oper]
+enable = true
+
+[command:version]
+enable = true
+
+[command:reload]
+enable = true
+
+[action:0]
+enable       = true
+pattern      = .
+action       = learn
+fallthrough  = true
+server       = 127.0.0.1
+port         = 8349
+instance     = first
+replace_nick = amazonas
+
+[action:1]
+enable      = true
+pattern     = amazonas
+action      = talk
+fallthrough = false
+server      = 127.0.0.1
+port        = 8349
+instance    = first
+
+[action:2]
+enable      = true
+pattern     = (ごめん|すまん)
+action      = activate
+fallthrough = false
+message     = 機能再開
+
+[action:3]
+enable      = true
+pattern     = (邪魔|うるさい|だまれ)
+action      = deactivate
+fallthrough = false
+message     = 機能停止
+
+[action:4]
+enable      = true
+pattern     = なると(くれ|ください|ちょうだい)
+action      = oper
+fallthrough = false
+message     = はいよ
+time        = 06:00-20:00
+
+[action:5]
+enable      = true
+pattern     = あとひといきじゃ
+action      = null
+fallthrough = false
+message     = パワーをメテオに
+
+[periodic_action:0]
+enable   = true
+action   = 1
+interval = 1234

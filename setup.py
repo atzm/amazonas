@@ -14,11 +14,13 @@ setup(
     entry_points={'console_scripts': [
         'amzcons = amazonas.console:main',
         'amzweb = amazonas.web:main',
+        'amzirc = amazonas.ircbot:main',
     ]},
     packages=find_packages(exclude=['test']),
     platforms=['Linux'],
     install_requires=[
         'flask>=0.10.1',
+        'irc>=8.5.1',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',

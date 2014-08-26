@@ -7,10 +7,20 @@ from ConfigParser import SafeConfigParser, NoSectionError, NoOptionError
 
 
 class Config(SafeConfigParser):
-    def read(self, path):
+    ENCODE = 'utf-8'
+
+    def reload(self):
+        self.read()
+
+    def read(self, path=None):
+        if path is None:
+            path = getattr(self, 'lastreadpath', None)
+
         with open(path) as fp:
             fcntl.flock(fp.fileno(), fcntl.LOCK_SH)
             SafeConfigParser.readfp(self, fp, path)
+
+        setattr(self, 'lastreadpath', path)
 
     def write(self, path):
         with open(path, 'a+') as fp:
@@ -20,17 +30,22 @@ class Config(SafeConfigParser):
             SafeConfigParser.write(self, fp)
 
     def set(self, sect, key, val):
+        if type(val) is unicode:
+            val = val.encode(self.ENCODE)
+        else:
+            val = str(val)
         try:
-            SafeConfigParser.set(self, sect, key, str(val))
+            SafeConfigParser.set(self, sect, key, val)
         except NoSectionError:
             SafeConfigParser.add_section(self, sect)
-            SafeConfigParser.set(self, sect, key, str(val))
+            SafeConfigParser.set(self, sect, key, val)
 
     def get(self, sect, key, type_=''):
         try:
-            if not type_:
-                return SafeConfigParser.get(self, sect, key)
-            return getattr(SafeConfigParser, 'get%s' % type_)(self, sect, key)
+            val = getattr(SafeConfigParser, 'get%s' % type_)(self, sect, key)
+            if type(val) is str:
+                return unicode(val, self.ENCODE)
+            return val
         except (NoSectionError, NoOptionError, AttributeError):
             if type_ == 'int':
                 return 0
@@ -38,7 +53,7 @@ class Config(SafeConfigParser):
                 return 0.0
             elif type_ == 'boolean':
                 return False
-            return ''
+            return u''
 
     def getint(self, sect, key):
         return self.get(sect, key, 'int')
@@ -50,8 +65,8 @@ class Config(SafeConfigParser):
         return self.get(sect, key, 'boolean')
 
     def getlist(self, sect, key):
-        val = self.get(sect, key)
-        return shlex.split(val)
+        val = self.get(sect, key).encode(self.ENCODE)
+        return [unicode(v, self.ENCODE) for v in shlex.split(val)]
 
     def as_dict(self, sect):
         try:
