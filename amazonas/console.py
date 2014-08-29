@@ -27,6 +27,10 @@ class Command(object):
         p = '/'.join((self.PATH_PREFIX, self.instance))
         return ''.join((p, path))
 
+    def cmd_quit(self, *args):
+        raise StopIteration()
+    cmd_q = cmd_quit
+
     def cmd_print(self, *args):
         code, body = self.client.get(self.path())
         if code == 200:
@@ -156,6 +160,9 @@ def main():
                 continue
 
             func(*cmdline[1:])
+        except StopIteration:
+            sys.stdout.write('bye ;)\n')
+            break
         except:
             traceback.print_exc()
 
