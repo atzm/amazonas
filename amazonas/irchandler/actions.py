@@ -15,7 +15,7 @@ def null(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
 @ircplugin.action('oper')
 def oper(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
     if not replyto or not msgfrom:
-        logging.error('cannot exec with "replyto:%s" and "msgfrom:%s"',
+        logging.error('cannot exec "oper" with "replyto:%s", "msgfrom:%s"',
                       replyto, msgfrom)
         return
     conn.mode(replyto, '+o %s' % msgfrom)
@@ -24,7 +24,7 @@ def oper(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
 @ircplugin.action('disoper')
 def disoper(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
     if not replyto or not msgfrom:
-        logging.error('cannot exec with "replyto:%s" and "msgfrom:%s"',
+        logging.error('cannot exec "disoper" with "replyto:%s", "msgfrom:%s"',
                       replyto, msgfrom)
         return
     conn.mode(replyto, '-o %s' % msgfrom)
@@ -33,6 +33,7 @@ def disoper(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
 @ircplugin.action('learn')
 def learn(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
     if not msg:
+        logging.error('cannot exec "learn" without any messages')
         return
 
     replace_nick = conf.get('replace_nick', '')
