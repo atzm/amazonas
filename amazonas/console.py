@@ -29,10 +29,10 @@ class Command(object):
 
     def cmd_print(self, *args):
         code, body = self.client.get(self.path())
-        if code == 200 and body['score'] is not None:
+        if code == 200:
             print('%s [%f]' % (body['text'], body['score']))
         else:
-            print('[failed]')
+            print('[failed: %d]' % code)
     cmd_p = cmd_print
 
     def cmd_learn(self, *args):
@@ -55,7 +55,7 @@ class Command(object):
         if code == 204:
             print('[success]')
         else:
-            print('[failed]')
+            print('[failed: %d]' % code)
     cmd_l = cmd_learn
 
     def cmd_maps(self, *args):
@@ -70,7 +70,7 @@ class Command(object):
             for v in body.get('values', []):
                 print(v)
         else:
-            print('[failed]')
+            print('[failed: %d]' % code)
     cmd_m = cmd_maps
 
     def cmd_keys(self, *args):
@@ -80,7 +80,7 @@ class Command(object):
                 json.dump(k, sys.stdout, ensure_ascii=False)
                 sys.stdout.write('\n')
         else:
-            print('[failed]')
+            print('[failed: %d]' % code)
     cmd_k = cmd_keys
 
     def cmd_entrypoints(self, *args):
@@ -89,7 +89,7 @@ class Command(object):
             for k in body.get('entrypoints', []):
                 print(k)
         else:
-            print('[failed]')
+            print('[failed: %d]' % code)
     cmd_e = cmd_entrypoints
 
     def cmd_recent(self, *args):
@@ -98,7 +98,7 @@ class Command(object):
             for k in body.get('recents', []):
                 print(k)
         else:
-            print('[failed]')
+            print('[failed: %d]' % code)
     cmd_r = cmd_recent
 
     def cmd_stat(self, *args):
@@ -108,7 +108,7 @@ class Command(object):
             print('markov keys:     %d' % body['keys'])
             print('entrypoints:     %d' % body['entrypoints'])
         else:
-            print('[failed]')
+            print('[failed: %d]' % code)
     cmd_s = cmd_stat
 
     def cmd_help(self, *args):

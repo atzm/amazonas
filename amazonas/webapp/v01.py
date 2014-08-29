@@ -21,7 +21,9 @@ def root(inst):
 
     if flask.request.method == 'GET':
         text, sc = inst.run()
-        return flask.jsonify(text=text, score=sc)
+        if text is not None and sc is not None:
+            return flask.jsonify(text=text, score=sc)
+        return flask.Response(status=204)
 
     data = flask.request.get_json()
     if 'text' not in data:

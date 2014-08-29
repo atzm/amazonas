@@ -55,10 +55,8 @@ def talk(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
     path = str('/'.join(('/v0.1', conf['instance'])))
 
     code, body = client.get(path)
-    text = body.get('text', None)
-
-    if code == 200 and text is not None:
-        conn.notice(replyto, text)
-        logging.info('talked: [%s] %s', replyto, text)
+    if code == 200:
+        conn.notice(replyto, body['text'])
+        logging.info('talked: [%s] %s', replyto, body['text'])
     else:
         logging.warn('failed to get a text: %d', code)
