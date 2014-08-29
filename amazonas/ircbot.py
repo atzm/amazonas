@@ -10,10 +10,10 @@ import irc.bot
 import irc.buffer
 import irc.client
 
-import util
-import config
-import ircplugin
-import irchandler
+from . import util
+from . import config
+from . import ircplugin
+from . import irchandler
 
 
 class IRCBot(irc.bot.SingleServerIRCBot):

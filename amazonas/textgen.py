@@ -4,10 +4,10 @@ import random
 import operator
 import collections
 
-import db
-import util
-import parser
-import config
+from . import db
+from . import util
+from . import parser
+from . import config
 
 
 class MarkovTable(object):

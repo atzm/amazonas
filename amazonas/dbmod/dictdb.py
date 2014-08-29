@@ -6,11 +6,11 @@ import errno
 import codecs
 import random
 
-import amazonas.db
+from .. import db
 
 
-@amazonas.db.dbclass(amazonas.db.DBTYPE_MARKOV, amazonas.db.DBTYPE_ENTRYPOINT)
-class Dict(amazonas.db.Database):
+@db.dbclass(db.DBTYPE_MARKOV, db.DBTYPE_ENTRYPOINT)
+class Dict(db.Database):
     def __init__(self, path=None, **kw):
         self.path = path
         self.load()

@@ -2,11 +2,11 @@
 
 import MeCab
 
-import amazonas.parser
+from .. import parser
 
 
-@amazonas.parser.parserclass(amazonas.parser.PARSERTYPE_MORPH)
-class Mecab(amazonas.parser.Parser):
+@parser.parserclass(parser.PARSERTYPE_MORPH)
+class Mecab(parser.Parser):
     ENTRY_CLS = {
         u'連体詞':   ('*',),
         u'接頭詞':   (u'形容詞接続', u'数接続', u'動詞接続', u'名詞接続'),

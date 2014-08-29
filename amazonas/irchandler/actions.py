@@ -3,17 +3,16 @@
 import re
 import logging
 
-import amazonas.util
-import amazonas.config
-import amazonas.ircplugin
+from .. import util
+from .. import ircplugin
 
 
-@amazonas.ircplugin.action('null')
+@ircplugin.action('null')
 def null(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
     pass
 
 
-@amazonas.ircplugin.action('oper')
+@ircplugin.action('oper')
 def oper(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
     if not replyto or not msgfrom:
         logging.error('cannot exec with "replyto:%s" and "msgfrom:%s"',
@@ -22,7 +21,7 @@ def oper(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
     conn.mode(replyto, '+o %s' % msgfrom)
 
 
-@amazonas.ircplugin.action('disoper')
+@ircplugin.action('disoper')
 def disoper(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
     if not replyto or not msgfrom:
         logging.error('cannot exec with "replyto:%s" and "msgfrom:%s"',
@@ -31,7 +30,7 @@ def disoper(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
     conn.mode(replyto, '-o %s' % msgfrom)
 
 
-@amazonas.ircplugin.action('learn')
+@ircplugin.action('learn')
 def learn(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
     if not msg:
         return
@@ -40,7 +39,7 @@ def learn(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
     if replace_nick and msgfrom:
         msg = re.sub(replace_nick, msgfrom, msg)
 
-    client = amazonas.util.HTTPClient(str(conf['server']), int(conf['port']))
+    client = util.HTTPClient(str(conf['server']), int(conf['port']))
     path = str('/'.join(('/v0.1', conf['instance'])))
 
     code, _ = client.put(path, {'text': [msg]})
@@ -50,9 +49,9 @@ def learn(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
         logging.warn('learning failed: %s', msg)
 
 
-@amazonas.ircplugin.action('talk')
+@ircplugin.action('talk')
 def talk(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
-    client = amazonas.util.HTTPClient(str(conf['server']), int(conf['port']))
+    client = util.HTTPClient(str(conf['server']), int(conf['port']))
     path = str('/'.join(('/v0.1', conf['instance'])))
 
     code, body = client.get(path)

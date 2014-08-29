@@ -10,7 +10,7 @@ import inspect
 import readline
 import traceback
 
-import util
+from . import util
 
 
 class Command(object):

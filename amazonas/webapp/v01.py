@@ -3,24 +3,24 @@
 import json
 import flask
 
-import amazonas.webapp.instance
+from . import instance
 
 
 mod = flask.Blueprint('v0.1', __name__, url_prefix='/v0.1')
 
 
-def getinstance(instance):
-    if not amazonas.webapp.instance.has(instance):
+def getinstance(inst):
+    if not instance.has(inst):
         flask.abort(404)
-    return amazonas.webapp.instance.get(instance)
+    return instance.get(inst)
 
 
-@mod.route('/<instance>', methods=['GET', 'PUT'])
-def root(instance):
-    instance = getinstance(instance)
+@mod.route('/<inst>', methods=['GET', 'PUT'])
+def root(inst):
+    inst = getinstance(inst)
 
     if flask.request.method == 'GET':
-        text, sc = instance.run()
+        text, sc = inst.run()
         return flask.jsonify(text=text, score=sc)
 
     data = flask.request.get_json()
@@ -31,20 +31,20 @@ def root(instance):
         flask.abort(400)
 
     for line in data['text']:
-        instance.learn(line)
+        inst.learn(line)
 
     return flask.Response(status=204)
 
 
-@mod.route('/<instance>/keys')
-def keys(instance):
-    instance = getinstance(instance)
-    return flask.jsonify(keys=instance.markov.db.keys())
+@mod.route('/<inst>/keys')
+def keys(inst):
+    inst = getinstance(inst)
+    return flask.jsonify(keys=inst.markov.db.keys())
 
 
-@mod.route('/<instance>/keys/<path:keys>', methods=['GET', 'DELETE'])
-def maps(instance, keys):
-    instance = getinstance(instance)
+@mod.route('/<inst>/keys/<path:keys>', methods=['GET', 'DELETE'])
+def maps(inst, keys):
+    inst = getinstance(inst)
 
     if flask.request.method == 'DELETE':
         flask.abort(501)  # not implemented
@@ -56,28 +56,28 @@ def maps(instance, keys):
     if type(keys) is not list:
         flask.abort(400)
 
-    vals = instance.markov.db.get(tuple(keys))
+    vals = inst.markov.db.get(tuple(keys))
     if not vals:
         flask.abort(404)
 
     return flask.jsonify(values=vals)
 
 
-@mod.route('/<instance>/entrypoints')
-def entrypoints(instance):
-    instance = getinstance(instance)
-    return flask.jsonify(entrypoints=instance.markov.edb.keys())
+@mod.route('/<inst>/entrypoints')
+def entrypoints(inst):
+    inst = getinstance(inst)
+    return flask.jsonify(entrypoints=inst.markov.edb.keys())
 
 
-@mod.route('/<instance>/recents')
-def recents(instance):
-    instance = getinstance(instance)
-    return flask.jsonify(recents=list(instance.recent))
+@mod.route('/<inst>/recents')
+def recents(inst):
+    inst = getinstance(inst)
+    return flask.jsonify(recents=list(inst.recent))
 
 
-@mod.route('/<instance>/stats')
-def stats(instance):
-    instance = getinstance(instance)
-    return flask.jsonify(threshold=instance.s_thresh,
-                         keys=len(instance.markov.db.keys()),
-                         entrypoints=len(instance.markov.edb.keys()))
+@mod.route('/<inst>/stats')
+def stats(inst):
+    inst = getinstance(inst)
+    return flask.jsonify(threshold=inst.s_thresh,
+                         keys=len(inst.markov.db.keys()),
+                         entrypoints=len(inst.markov.edb.keys()))

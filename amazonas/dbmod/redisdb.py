@@ -3,11 +3,11 @@
 import json
 import redis
 
-import amazonas.db
+from .. import db
 
 
-@amazonas.db.dbclass(amazonas.db.DBTYPE_MARKOV, amazonas.db.DBTYPE_ENTRYPOINT)
-class Redis(amazonas.db.Database):
+@db.dbclass(db.DBTYPE_MARKOV, db.DBTYPE_ENTRYPOINT)
+class Redis(db.Database):
     def __init__(self, host='localhost', port=6379, db=0, **kw):
         self.redis = redis.StrictRedis(host=host, port=int(port), db=int(db))
 

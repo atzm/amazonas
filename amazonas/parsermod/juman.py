@@ -3,11 +3,11 @@
 import shlex
 import subprocess
 
-import amazonas.parser
+from .. import parser
 
 
-@amazonas.parser.parserclass(amazonas.parser.PARSERTYPE_MORPH)
-class Juman(amazonas.parser.Parser):
+@parser.parserclass(parser.PARSERTYPE_MORPH)
+class Juman(parser.Parser):
     PIPE_BUF = 512                     # 512B (POSIX.1-2001 minimum)
     JUMAN_RESPAWN_THRESHOLD = 1 << 28  # 256MB
     ENTRY_CLS = {

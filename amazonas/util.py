@@ -5,9 +5,9 @@ import shlex
 import urllib2
 import datetime
 
-import db
-import parser
-import config
+from . import db
+from . import parser
+from . import config
 
 
 def loadmodules():

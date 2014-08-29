@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import amazonas.util
-import amazonas.ircplugin
+from .. import util
+from .. import ircplugin
 
 
-@amazonas.ircplugin.event('join')
+@ircplugin.event('join')
 def oper(conn, event):
-    if not amazonas.util.config_enabled('event:join:oper'):
+    if not util.config_enabled('event:join:oper'):
         return
     if event.source.nick == conn.get_nickname():
         return

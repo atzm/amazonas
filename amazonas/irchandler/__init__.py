@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import events
-import actions
-import commands
+from . import events
+from . import actions
+from . import commands
 
 
 __all__ = ['events', 'actions', 'commands']
