@@ -13,12 +13,23 @@ path = /path/to/your/plugin/dir
 
 [event:join:oper]
 enable = true
+time   = 09:00-12:00 13:00-17:30
 
 [command:version]
 enable = true
 
 [command:reload]
-enable = true
+enable  = true
+message = 設定再読込
+
+[command:activate]
+enable  = true
+message = 頑張ります
+time    = 09:00-12:00 13:00-17:30
+
+[command:deactivate]
+enable  = true
+message = 寝ます
 
 [action:0]
 enable       = true
@@ -41,27 +52,13 @@ instance    = first
 
 [action:2]
 enable      = true
-pattern     = (ごめん|すまん)
-action      = activate
-fallthrough = false
-message     = 機能再開
-
-[action:3]
-enable      = true
-pattern     = (邪魔|うるさい|だまれ)
-action      = deactivate
-fallthrough = false
-message     = 機能停止
-
-[action:4]
-enable      = true
 pattern     = なると(くれ|ください|ちょうだい)
 action      = oper
 fallthrough = false
 message     = はいよ
 time        = 06:00-20:00
 
-[action:5]
+[action:3]
 enable      = true
 pattern     = あとひといきじゃ
 action      = null
@@ -72,3 +69,4 @@ message     = パワーをメテオに
 enable   = true
 action   = 1
 interval = 1234
+time     = 09:00-12:00 13:00-17:30

@@ -29,6 +29,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             spec.password = password
 
         super(IRCBot, self).__init__([spec], nick, nick)
+        self.action_active = True
 
         for name, handlers in ircplugin.iterevents():
             for handler in handlers:
@@ -37,30 +38,8 @@ class IRCBot(irc.bot.SingleServerIRCBot):
     def on_welcome(self, conn, event):
         channel = config.get('irc', 'channel')
         conn.join(channel)
-        logging.info('joined "%s"', channel)
-
-        for sect in sorted(config.sections()):
-            if not sect.startswith('periodic_action:'):
-                continue
-
-            if not config.has_option(sect, 'action'):
-                logging.warn('no action specified: %s', sect)
-                continue
-
-            action = 'action:%s' % config.get(sect, 'action')
-            if not config.has_section(action):
-                logging.warn('invalid action specified: %s', sect)
-                continue
-
-            interval = config.getint(sect, 'interval')
-            if interval < 60:
-                logging.warn('interval too short: %s', sect)
-                continue
-
-            self.connection.execute_every(interval, self._do_act,
-                                          (action, self.connection, None,
-                                           None, channel, None, sect))
-            logging.info('registered periodic action: "%s"', sect)
+        logging.info('joined channel "%s"', channel)
+        self._register_periodic(channel)
 
     def on_nicknameinuse(self, conn, event):
         conn.nick(conn.get_nickname() + '_')
@@ -89,7 +68,9 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             logging.exception('parse error: "%s"', msg)
             return
 
-        if not config.getboolean('command:%s' % words[0], 'enable'):
+        sect = 'command:%s' % words[0]
+
+        if not util.config_enabled(sect):
             return
 
         for handler in ircplugin.getcommand(words[0]):
@@ -99,33 +80,26 @@ class IRCBot(irc.bot.SingleServerIRCBot):
                 logging.exception('command error: "%s.%s" / "%s"',
                                   handler.__module__, handler.__name__, msg)
 
+        self._send_message(conn, replyto, sect)
+
     def _handle_action(self, conn, event, msgfrom, replyto, msg):
         for sect in sorted(config.sections()):
             if not sect.startswith('action:'):
                 continue
-            if not config.getboolean(sect, 'enable'):
-                continue
 
-            done = self._do_act(sect, conn, event, msgfrom, replyto, msg)
-
-            if done and not config.getboolean(sect, 'fallthrough'):
+            succeeded = self._do_act(sect, conn, event, msgfrom, replyto, msg)
+            if succeeded and not config.getboolean(sect, 'fallthrough'):
                 break
 
     def _do_act(self, sect, conn, event, msgfrom, replyto, msg, period=None):
+        if not self.action_active:
+            return True
+
         if period:
-            if not config.getboolean(period, 'enable'):
+            if not util.config_enabled(period):
                 return False
 
-        if not config.has_section(sect):
-            logging.warn('invalid section: %s', sect)
-            return False
-
-        try:
-            time_ = config.get(sect, 'time')
-            if time_ and not util.time_in(*time_.split('-', 2)):
-                return False
-        except:
-            logging.exception('[%s] time parse failed', sect)
+        if not util.config_enabled(sect):
             return False
 
         action = config.get(sect, 'action')
@@ -133,21 +107,22 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             logging.error('[%s] no action specified', sect)
             return False
 
-        pattern = config.get(sect, 'pattern')
-        if not pattern:
-            logging.error('[%s] no pattern specified', sect)
-            return False
+        if msg:  # if not periodic run
+            pattern = config.get(sect, 'pattern')
+            if not pattern:
+                logging.error('[%s] no pattern specified', sect)
+                return False
 
-        try:
-            regex = re.compile(pattern)
-        except:
-            logging.exception('[%s] pattern compilation failed', sect)
-            return False
+            try:
+                regex = re.compile(pattern)
+            except:
+                logging.exception('[%s] pattern compilation failed', sect)
+                return False
 
-        if msg:
             match = regex.search(msg)
             if match is None:
                 return False
+
         else:
             match = None
 
@@ -160,11 +135,40 @@ class IRCBot(irc.bot.SingleServerIRCBot):
                                   sect, handler.__module__,
                                   handler.__name__, msg)
 
+        self._send_message(conn, replyto, sect)
+        return True
+
+    def _register_periodic(self, channel):
+        for sect in sorted(config.sections()):
+            if not sect.startswith('periodic_action:'):
+                continue
+
+            # do not evaluate config_enabled() while registering.
+            # if do, the disabled action will not be registered forever.
+
+            if not config.has_option(sect, 'action'):
+                logging.error('no action specified: %s', sect)
+                continue
+
+            action = 'action:%s' % config.get(sect, 'action')
+            if not config.has_section(action):
+                logging.error('invalid action specified: %s', sect)
+                continue
+
+            interval = config.getint(sect, 'interval')
+            if interval < 60:
+                logging.error('interval too short, ignored: %s', sect)
+                continue
+
+            self.connection.execute_every(interval, self._do_act,
+                                          (action, self.connection, None,
+                                           None, channel, None, sect))
+            logging.info('registered periodic action: "%s"', sect)
+
+    def _send_message(self, conn, replyto, sect):
         message = config.get(sect, 'message')
         if message:
             conn.notice(replyto, message)
-
-        return True
 
 
 # XXX: python-irc is hardcoded the encoding utf-8 ...

@@ -63,7 +63,7 @@ class Mecab(amazonas.parser.Parser):
                 break
 
             try:
-                word, info = line.split(None, 2)
+                word, info = line.split(None, 1)
                 yield word, info.split(',')
             except:
                 pass

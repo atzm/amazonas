@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import logging
 import amazonas.config
 import amazonas.ircplugin
 
@@ -12,4 +13,16 @@ def version(ircbot, conn, event, msgfrom, replyto, *args):
 @amazonas.ircplugin.command('reload')
 def reload(ircbot, conn, event, msgfrom, replyto, *args):
     amazonas.config.reload()
-    conn.notice(replyto, 'config reloaded')
+    logging.info('config reloaded')
+
+
+@amazonas.ircplugin.command('activate')
+def activate(ircbot, conn, event, msgfrom, replyto, *args):
+    ircbot.action_active = True
+    logging.info('activated')
+
+
+@amazonas.ircplugin.command('deactivate')
+def deactivate(ircbot, conn, event, msgfrom, replyto, *args):
+    ircbot.action_active = False
+    logging.info('deactivated')

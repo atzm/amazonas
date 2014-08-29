@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+import shlex
 import urllib2
 import datetime
 
@@ -29,21 +30,39 @@ def getdb(type_, instance):
     return c(**d)
 
 
-def time_in(start_time, end_time):
-    if not start_time or not end_time:
-        return False
-
+def time_in(time_str):
     now = datetime.datetime.today()
     date = '%s/%s/%s' % (now.year, now.month, now.day)
-    start = datetime.datetime.strptime('%s %s' % (date, start_time),
-                                       '%Y/%m/%d %H:%M')
-    end = datetime.datetime.strptime('%s %s' % (date, end_time),
-                                     '%Y/%m/%d %H:%M')
 
-    if start < now < end:
-        return True
+    for t in shlex.split(time_str.encode('utf-8')):
+        start, end = t.split('-', 1)
+
+        start = datetime.datetime.strptime(
+            '%s %s' % (date, start), '%Y/%m/%d %H:%M')
+        end = datetime.datetime.strptime(
+            '%s %s' % (date, end), '%Y/%m/%d %H:%M')
+
+        if start <= now <= end:
+            return True
 
     return False
+
+
+def config_enabled(sect):
+    if not config.has_section(sect):
+        return False
+
+    if not config.getboolean(sect, 'enable'):
+        return False
+
+    try:
+        time_ = config.get(sect, 'time')
+        if time_ and not time_in(time_):
+            return False
+    except:
+        return False
+
+    return True
 
 
 class HTTPClient(object):

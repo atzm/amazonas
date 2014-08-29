@@ -16,10 +16,19 @@ def null(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
 @amazonas.ircplugin.action('oper')
 def oper(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
     if not replyto or not msgfrom:
-        logging.warn('cannot exec with "replyto:%s" and "msgfrom:%s"',
-                     replyto, msgfrom)
+        logging.error('cannot exec with "replyto:%s" and "msgfrom:%s"',
+                      replyto, msgfrom)
         return
     conn.mode(replyto, '+o %s' % msgfrom)
+
+
+@amazonas.ircplugin.action('disoper')
+def disoper(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
+    if not replyto or not msgfrom:
+        logging.error('cannot exec with "replyto:%s" and "msgfrom:%s"',
+                      replyto, msgfrom)
+        return
+    conn.mode(replyto, '-o %s' % msgfrom)
 
 
 @amazonas.ircplugin.action('learn')
@@ -54,13 +63,3 @@ def talk(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
         logging.info('talked: [%s] %s', replyto, text)
     else:
         logging.warn('failed to get a text: %d', code)
-
-
-@amazonas.ircplugin.action('activate')
-def activate(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
-    logging.info('not implemented: activate')
-
-
-@amazonas.ircplugin.action('deactivate')
-def deactivate(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
-    logging.info('not implemented: deactivate')
