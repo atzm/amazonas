@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import os
+import sys
 import json
 import shlex
 import urllib2
@@ -8,14 +10,6 @@ import datetime
 from . import db
 from . import parser
 from . import config
-
-
-def loadmodules():
-    for m in config.getlist('module', 'parsers'):
-        parser.loadmodule(m)
-
-    for m in config.getlist('module', 'dbs'):
-        db.loadmodule(m)
 
 
 def getparser(type_, instance):
@@ -28,6 +22,28 @@ def getdb(type_, instance):
     d = config.as_dict('db:%s:%s' % (type_, instance))
     c = db.getclass(type_, d.pop('type'))
     return c(**d)
+
+
+def daemonize(chdir='/', close=True):
+    if os.fork() > 0:
+        sys.exit(0)
+
+    os.setsid()
+
+    if os.fork() > 0:
+        sys.exit(0)
+
+    if chdir:
+        os.chdir(chdir)
+
+    if close:
+        os.umask(0)
+        os.close(0)
+        os.close(1)
+        os.close(2)
+        sys.__stdin__ = sys.stdin = open(os.devnull)
+        sys.__stdout__ = sys.stdout = open(os.devnull, 'w')
+        sys.__stderr__ = sys.stderr = open(os.devnull, 'w')
 
 
 def time_in(time_str):

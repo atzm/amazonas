@@ -1,0 +1,19 @@
+# -*- coding: utf-8 -*-
+
+[loggers]
+keys = root
+
+[handlers]
+keys = syslog
+
+[formatters]
+keys = 
+
+[logger_root]
+level    = INFO
+handlers = syslog
+
+[handler_syslog]
+class = handlers.SysLogHandler
+level = INFO
+args  = ('/dev/log', handlers.SysLogHandler.LOG_USER)

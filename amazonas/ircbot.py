@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import re
+import os
 import sys
 import shlex
+import getopt
 import logging
+import logging.config
 import contextlib
 
 import irc.bot
@@ -202,30 +205,60 @@ def encoding(encode):
 
 
 def main():
-    logging.basicConfig(level=logging.INFO)
-    config.read(sys.argv[1])
+    def usage():
+        raise SystemExit('syntax: %s [-l <logging_config>] <config>' %
+                         os.path.basename(sys.argv[0]))
+
+    def log_modules():
+        logging.info('loaded actions:')
+        for name, actions in ircplugin.iteractions():
+            logging.info('  %s:', name)
+            for act in actions:
+                logging.info('    - %s.%s', act.__module__, act.__name__)
+
+        logging.info('loaded commands:')
+        for name, commands in ircplugin.itercommands():
+            logging.info('  %s:', name)
+            for comm in commands:
+                logging.info('    - %s.%s', comm.__module__, comm.__name__)
+
+        logging.info('loaded events:')
+        for name, events in ircplugin.iterevents():
+            logging.info('  %s:', name)
+            for evt in events:
+                logging.info('    - %s.%s', evt.__module__, evt.__name__)
+
+    logging_config = None
+
+    try:
+        opts, args = getopt.gnu_getopt(sys.argv[1:], 'l:')
+    except getopt.error:
+        usage()
+
+    for opt, optarg in opts:
+        if opt == '-l':
+            logging_config = os.path.abspath(optarg)
+
+    if not args:
+        usage()
+
+    config.read(os.path.abspath(args[0]))
 
     plugin_path = config.get('plugin', 'path')
     if plugin_path:
         ircplugin.load(plugin_path)
 
-    logging.info('loaded actions:')
-    for name, actions in ircplugin.iteractions():
-        logging.info('  %s:', name)
-        for act in actions:
-            logging.info('    - %s.%s', act.__module__, act.__name__)
+    if logging_config:
+        logging.config.fileConfig(logging_config)
+    else:
+        logging.basicConfig(level=logging.INFO,
+                            format='%(asctime)s %(levelname)s %(message)s',
+                            datefmt='%Y/%m/%d %H:%M:%S')
 
-    logging.info('loaded commands:')
-    for name, commands in ircplugin.itercommands():
-        logging.info('  %s:', name)
-        for comm in commands:
-            logging.info('    - %s.%s', comm.__module__, comm.__name__)
+    log_modules()
 
-    logging.info('loaded events:')
-    for name, events in ircplugin.iterevents():
-        logging.info('  %s:', name)
-        for evt in events:
-            logging.info('    - %s.%s', evt.__module__, evt.__name__)
+    if config.getboolean('irc', 'daemon'):
+        util.daemonize()
 
     with encoding(config.get('irc', 'encode')):
         bot = IRCBot()

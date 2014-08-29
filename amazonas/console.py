@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 import sys
 import json
 import fcntl
@@ -123,10 +124,18 @@ class Command(object):
 
 
 def main():
+    def usage():
+        raise SystemExit('syntax: %s [-h host] [-p port] <instance>' %
+                         os.path.basename(sys.argv[0]))
+
     fsenc = sys.getfilesystemencoding()
     host = 'localhost'
     port = 8349
-    opts, args = getopt.gnu_getopt(sys.argv[1:], 'h:p:')
+
+    try:
+        opts, args = getopt.gnu_getopt(sys.argv[1:], 'h:p:')
+    except getopt.error:
+        usage()
 
     for opt, optarg in opts:
         if opt == '-h':
@@ -136,8 +145,7 @@ def main():
             assert(0 <= port <= 65535)
 
     if not args:
-        raise SystemExit('syntax: %s [-h host] [-p port] <instance>' %
-                         sys.argv[0])
+        usage()
 
     cmd = Command(args[0], host, port)
     readline.parse_and_bind('tab: complete')

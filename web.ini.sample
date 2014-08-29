@@ -4,6 +4,7 @@
 instances = first second
 host      = 127.0.0.1
 port      = 8349
+daemon    = true
 debug     = true
 
 [module]
