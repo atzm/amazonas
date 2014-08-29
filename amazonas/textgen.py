@@ -85,7 +85,7 @@ class TextGenerator(object):
 
     def learn(self, line):
         info = tuple(self.parser.parse(line))
-        if not info:
+        if len(info) <= self.markov.level:
             return
 
         zipped = zip(*info)
