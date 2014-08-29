@@ -175,6 +175,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 @contextlib.contextmanager
 def encoding(encode):
     orig_encode = irc.buffer.DecodingLineBuffer.encoding
+    orig_errors = irc.buffer.DecodingLineBuffer.errors
     orig_send_raw = irc.client.ServerConnection.send_raw
 
     def send_raw(self, string, *args):
@@ -191,10 +192,12 @@ def encoding(encode):
 
     try:
         irc.buffer.DecodingLineBuffer.encoding = encode
+        irc.buffer.DecodingLineBuffer.errors = 'replace'
         irc.client.ServerConnection.send_raw = send_raw
         yield
     finally:
         irc.buffer.DecodingLineBuffer.encoding = orig_encode
+        irc.buffer.DecodingLineBuffer.errors = orig_errors
         irc.client.ServerConnection.send_raw = orig_send_raw
 
 
