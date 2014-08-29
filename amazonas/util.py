@@ -67,11 +67,11 @@ def config_enabled(sect):
 
 class HTTPClient(object):
     def __init__(self, host, port):
-        self.host = host
-        self.port = port
+        self.host = str(host)
+        self.port = int(port)
 
     def url(self, path):
-        return ''.join(('http://', self.host, ':', str(self.port), path))
+        return str(''.join(('http://', self.host, ':', str(self.port), path)))
 
     def get(self, path):
         return self.request('GET', path)

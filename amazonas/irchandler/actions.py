@@ -40,8 +40,8 @@ def learn(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
     if replace_nick and msgfrom:
         msg = re.sub(replace_nick, msgfrom, msg)
 
-    client = util.HTTPClient(str(conf['server']), int(conf['port']))
-    path = str('/'.join(('/v0.1', conf['instance'])))
+    client = util.HTTPClient(conf['server'], conf['port'])
+    path = '/'.join(('/v0.1', conf['instance']))
 
     code, _ = client.put(path, {'text': [msg]})
     if code == 204:
@@ -52,8 +52,8 @@ def learn(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
 
 @ircplugin.action('talk')
 def talk(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
-    client = util.HTTPClient(str(conf['server']), int(conf['port']))
-    path = str('/'.join(('/v0.1', conf['instance'])))
+    client = util.HTTPClient(conf['server'], conf['port'])
+    path = '/'.join(('/v0.1', conf['instance']))
 
     code, body = client.get(path)
     if code == 200:
