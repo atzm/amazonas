@@ -11,14 +11,16 @@ parsers = juman mecab
 dbs     = dictdb redisdb
 
 [textgen:first]
-retry    = 50
-s_thresh = 0.0
-n_recent = 100
+score_threshold = 0.0
+nr_retry        = 50
+nr_recent       = 100
+nr_history      = 10
 
 [textgen:second]
-retry    = 50
-s_thresh = 0.0
-n_recent = 100
+score_threshold = 0.0
+nr_retry        = 50
+nr_recent       = 100
+nr_history      = 10
 
 [markov:first]
 level    = 2

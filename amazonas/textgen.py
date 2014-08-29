@@ -68,14 +68,16 @@ class MarkovTable(object):
 
 
 class TextGenerator(object):
-    def __init__(self, parser, markov, retry=50, s_thresh=0.0, n_recent=100):
+    def __init__(self, parser, markov, **kw):
         self.parser = parser
         self.markov = markov
-        self.retry = int(retry)
-        self.s_thresh = float(s_thresh)
-        self.n_recent = int(n_recent)
-        self.cls_order = collections.deque(maxlen=self.n_recent)
-        self.recent = collections.deque(maxlen=self.n_recent)
+        self.nr_retry = int(kw.get('nr_retry', 50))
+        self.nr_recent = int(kw.get('nr_recent', 100))
+        self.nr_history = int(kw.get('nr_history', 10))
+        self.score_threshold = float(kw.get('score_threshold', 0.0))
+        self.cls_order = collections.deque(maxlen=self.nr_recent)
+        self.recent = collections.deque(maxlen=self.nr_recent)
+        self.history = collections.deque(maxlen=self.nr_history)
 
     @classmethod
     def getinstance(cls, instance, markov_cls=MarkovTable):
@@ -94,7 +96,7 @@ class TextGenerator(object):
         self.recent.append(line)
 
     def run(self):
-        for x in xrange(self.retry):
+        for x in xrange(self.nr_retry):
             try:
                 entry = random.choice(self.entrypoints)
             except IndexError:
@@ -106,6 +108,8 @@ class TextGenerator(object):
                 continue
             if not text:
                 continue
+            if text in self.history:
+                continue
 
             parsed = tuple(self.parser.parse(text))
             if not self.parser.validate(parsed):
@@ -113,8 +117,9 @@ class TextGenerator(object):
 
             cls_order = [i[0] for _, i in parsed]
             score = self.score(cls_order)
-            self.s_thresh = (self.s_thresh + score) / 2
-            if self.s_thresh < score:
+            self.score_threshold = (self.score_threshold + score) / 2
+            if self.score_threshold < score:
+                self.history.append(text)
                 return text, score
 
         return None, None

@@ -80,6 +80,6 @@ def recents(inst):
 @mod.route('/<inst>/stats')
 def stats(inst):
     inst = getinstance(inst)
-    return flask.jsonify(threshold=inst.s_thresh,
+    return flask.jsonify(threshold=inst.score_threshold,
                          keys=len(inst.markov.db.keys()),
                          entrypoints=len(inst.markov.edb.keys()))
