@@ -122,7 +122,7 @@ class ConsoleCommand(Command):
             if opt == '-c':
                 encode = optarg
 
-        with open(args[0]) as fp:
+        with open(os.path.expanduser(args[0])) as fp:
             fcntl.flock(fp.fileno(), fcntl.LOCK_SH)
             text = [unicode(line.strip(), encode) for line in fp]
 
