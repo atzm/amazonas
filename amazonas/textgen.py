@@ -38,7 +38,7 @@ class MarkovTable(object):
         def check(key):
             return len([k for k in key if k]) == len(key)
 
-        entry = None
+        entrypoint = None
         items = [''] * self.level
 
         for item in itemlist:
@@ -46,18 +46,18 @@ class MarkovTable(object):
                 key = tuple(items)
                 self.db.append(key, item)
 
-                if not entry:
-                    entry = key
+                if not entrypoint:
+                    entrypoint = key
 
             items.pop(0)
             items.append(item)
 
-        if entry:
-            self.edb.append(entry[0], entry)
+        if entrypoint:
+            self.edb.append(entrypoint[0], entrypoint)
 
-    def run(self, entry=None):
-        if entry:
-            items = self.edb.getrand(entry)
+    def run(self, entrypoint=None):
+        if entrypoint:
+            items = self.edb.getrand(entrypoint)
         else:
             items = self.edb.getrandall()
         if items is None:
@@ -82,13 +82,16 @@ class TextGenerator(object):
     def __init__(self, parser, markov, **kw):
         self.parser = parser
         self.markov = markov
+
         self.nr_retry = int(kw.get('nr_retry', 50))
-        self.nr_recent = int(kw.get('nr_recent', 100))
         self.nr_history = int(kw.get('nr_history', 10))
+        self.nr_wordclass = int(kw.get('nr_wordclass', 100))
+        self.nr_entrypoint = int(kw.get('nr_entrypoint', 100))
         self.score_threshold = float(kw.get('score_threshold', 0.0))
-        self.cls_order = collections.deque(maxlen=self.nr_recent)
-        self.recent = collections.deque(maxlen=self.nr_recent)
+
         self.history = collections.deque(maxlen=self.nr_history)
+        self.wordclass = collections.deque(maxlen=self.nr_wordclass)
+        self.entrypoint = collections.deque(maxlen=self.nr_entrypoint)
 
     @classmethod
     def getinstance(cls, instance, markov_cls=MarkovTable):
@@ -103,18 +106,18 @@ class TextGenerator(object):
 
         zipped = zip(*info)
         self.markov.learn(zipped[0])
-        self.cls_order.append(zip(*zipped[1])[0])
-        self.recent.append(line)
+        self.wordclass.append(zip(*zipped[1])[0])
+        self.entrypoint.extend(self.parser.entrypoints(info))
 
     def run(self):
         for x in xrange(self.nr_retry):
             try:
-                entry = random.choice(self.entrypoints)
+                entrypoint = random.choice(self.entrypoint)
             except IndexError:
-                entry = None
+                entrypoint = None
 
             try:
-                text = ''.join(self.markov.run(entry))
+                text = ''.join(self.markov.run(entrypoint))
             except:
                 continue
             if not text:
@@ -126,8 +129,8 @@ class TextGenerator(object):
             if not self.parser.validate(parsed):
                 continue
 
-            cls_order = [i[0] for _, i in parsed]
-            score = self.score(cls_order)
+            wordclass = [i[0] for _, i in parsed]
+            score = self.score(wordclass)
             self.score_threshold = (self.score_threshold + score) / 2
             if self.score_threshold < score:
                 self.history.append(text)
@@ -135,18 +138,11 @@ class TextGenerator(object):
 
         return None, None
 
-    def score(self, cls_order):
-        if len(self.cls_order) <= 1:
+    def score(self, wordclass):
+        if len(self.wordclass) <= 1:
             return 1.0
-        dist = [self.distance(cls_order, order) for order in self.cls_order]
+        dist = [self.distance(wordclass, wcls) for wcls in self.wordclass]
         return 1.0 / (float(sum(dist)) / len(dist))
-
-    @property
-    def entrypoints(self):
-        entries = []
-        for line in self.recent:
-            entries.extend(self.parser.entrypoints(line))
-        return entries
 
     @staticmethod
     def distance(a, b, op=operator.eq):

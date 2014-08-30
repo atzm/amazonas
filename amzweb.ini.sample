@@ -14,14 +14,16 @@ databases = dictdb redisdb
 [textgen:first]
 score_threshold = 0.0
 nr_retry        = 50
-nr_recent       = 100
 nr_history      = 10
+nr_wordclass    = 100
+nr_entrypoint   = 100
 
 [textgen:second]
 score_threshold = 0.0
 nr_retry        = 50
-nr_recent       = 100
 nr_history      = 10
+nr_wordclass    = 100
+nr_entrypoint   = 100
 
 [markov:first]
 level    = 2

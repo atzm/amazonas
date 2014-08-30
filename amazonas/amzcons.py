@@ -176,13 +176,13 @@ class ConsoleCommand(Command):
         else:
             self.print('[failed: %d]' % code)
 
-    def cmd_recent(self, *args):
+    def cmd_rentry(self, *args):
         '''(no arguments required)
-        Print recent learned text.
+        Print recent learned candidate entrypoints.
         '''
-        code, body = self.client.get(self.path('/recents'))
+        code, body = self.client.get(self.path('/entrypoints/recents'))
         if code == 200:
-            for k in body.get('recents', []):
+            for k in body.get('entrypoints', []):
                 json.dump(k, self.FILE, ensure_ascii=False)
                 self.print()
         else:

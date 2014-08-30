@@ -71,10 +71,10 @@ def entrypoints(inst):
     return flask.jsonify(entrypoints=inst.markov.edb.keys())
 
 
-@mod.route('/<inst>/recents')
-def recents(inst):
+@mod.route('/<inst>/entrypoints/recents')
+def recent_entrypoints(inst):
     inst = getinstance(inst)
-    return flask.jsonify(recents=list(inst.recent))
+    return flask.jsonify(entrypoints=list(inst.entrypoint))
 
 
 @mod.route('/<inst>/histories')

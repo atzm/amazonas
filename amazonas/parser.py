@@ -40,8 +40,8 @@ class Parser(object):
     def __init__(self, **kw):
         pass
 
-    def entrypoints(self, text):
-        return [w for w, i in self.parse(text) if self.isentry(w, i)]
+    def entrypoints(self, parsed):
+        return [w for w, i in parsed if self.isentry(w, i)]
 
     def validate(self, parsed):
         entry_word, entry_info = parsed[0]
