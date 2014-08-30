@@ -3,6 +3,7 @@
 import re
 import os
 import sys
+import signal
 import getopt
 import logging
 import logging.config
@@ -226,6 +227,19 @@ def main():
             for evt in events:
                 logging.info('    - %s.%s', evt.__module__, evt.__name__)
 
+    @contextlib.contextmanager
+    def sigexit(bot, *sigs):
+        def q():
+            bot.die(config.get('irc', 'quit_message'))
+            raise SystemExit()
+        try:
+            for sig in sigs:
+                signal.signal(sig, lambda *_: q())
+            yield bot
+        finally:
+            for sig in sigs:
+                signal.signal(sig, signal.SIG_DFL)
+
     logging_config = None
 
     try:
@@ -259,8 +273,8 @@ def main():
         util.daemonize()
 
     with encoding(config.get('irc', 'encode')):
-        bot = IRCBot()
-        bot.start()
+        with sigexit(IRCBot(), signal.SIGINT, signal.SIGTERM) as bot:
+            bot.start()
 
 
 if __name__ == '__main__':
