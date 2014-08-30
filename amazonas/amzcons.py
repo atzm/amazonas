@@ -245,6 +245,9 @@ def main():
             print('bye ;)')
             break
 
+        except KeyboardInterrupt:
+            print()
+
         except:
             traceback.print_exc()
 
