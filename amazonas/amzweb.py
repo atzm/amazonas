@@ -27,7 +27,7 @@ def main():
         for m in config.getlist('module', 'parsers'):
             parser.loadmodule(m)
 
-        for m in config.getlist('module', 'dbs'):
+        for m in config.getlist('module', 'databases'):
             db.loadmodule(m)
 
     def run_app(name):

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# see also: https://docs.python.org/2/library/logging.config.html
 
 [loggers]
 keys = root

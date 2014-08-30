@@ -8,8 +8,8 @@ daemon    = true
 debug     = true
 
 [module]
-parsers = juman mecab
-dbs     = dictdb redisdb
+parsers   = juman mecab
+databases = dictdb redisdb
 
 [textgen:first]
 score_threshold = 0.0

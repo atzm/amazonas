@@ -12,9 +12,9 @@ setup(
     author_email='atzm@atzm.org',
     license='BSD-2',
     entry_points={'console_scripts': [
-        'amzcons = amazonas.console:main',
-        'amzweb = amazonas.web:main',
-        'amzirc = amazonas.ircbot:main',
+        'amzcons = amazonas.amzcons:main',
+        'amzweb  = amazonas.amzweb:main',
+        'amzirc  = amazonas.amzirc:main',
     ]},
     packages=find_packages(exclude=['test']),
     platforms=['Linux'],
