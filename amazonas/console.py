@@ -4,7 +4,6 @@ import os
 import sys
 import json
 import fcntl
-import shlex
 import getopt
 import urllib
 import inspect
@@ -149,18 +148,15 @@ def main():
 
     cmd = Command(args[0], host, port)
     readline.parse_and_bind('tab: complete')
+
     while True:
         try:
             line = raw_input('>>> ').strip()
-        except EOFError:
-            sys.stdout.write('\nbye ;)\n')
-            break
 
-        if not line:
-            continue
+            if not line:
+                continue
 
-        try:
-            cmdline = [unicode(c, fsenc) for c in shlex.split(line)]
+            cmdline = util.split(line, fsenc)
             func = cmd.cmd(cmdline[0])
 
             if not callable(func):
@@ -168,9 +164,15 @@ def main():
                 continue
 
             func(*cmdline[1:])
+
+        except EOFError:
+            sys.stdout.write('\nbye ;)\n')
+            break
+
         except StopIteration:
             sys.stdout.write('bye ;)\n')
             break
+
         except:
             traceback.print_exc()
 

@@ -3,7 +3,6 @@
 import re
 import os
 import sys
-import shlex
 import getopt
 import logging
 import logging.config
@@ -65,15 +64,14 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         encode = config.get('irc', 'encode')
 
         try:
-            words = [unicode(word, encode)
-                     for word in shlex.split(msg.encode(encode))]
+            words = util.split(msg, encode)
         except:
             logging.exception('parse error: "%s"', msg)
             return
 
         sect = 'command:%s' % words[0]
 
-        if not util.config_enabled(sect):
+        if not config.enabled(sect):
             return
 
         for handler in ircplugin.getcommand(words[0]):
@@ -99,10 +97,10 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             return True
 
         if period:
-            if not util.config_enabled(period):
+            if not config.enabled(period):
                 return False
 
-        if not util.config_enabled(sect):
+        if not config.enabled(sect):
             return False
 
         action = config.get(sect, 'action')
@@ -146,7 +144,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             if not sect.startswith('periodic_action:'):
                 continue
 
-            # do not evaluate config_enabled() while registering.
+            # do not evaluate config.enabled() while registering.
             # if do, the disabled action will not be registered forever.
 
             if not config.has_option(sect, 'action'):

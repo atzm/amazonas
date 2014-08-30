@@ -7,22 +7,6 @@ import shlex
 import urllib2
 import datetime
 
-from . import db
-from . import parser
-from . import config
-
-
-def getparser(type_, instance):
-    d = config.as_dict('parser:%s:%s' % (type_, instance))
-    c = parser.getclass(type_, d.pop('type'))
-    return c(**d)
-
-
-def getdb(type_, instance):
-    d = config.as_dict('db:%s:%s' % (type_, instance))
-    c = db.getclass(type_, d.pop('type'))
-    return c(**d)
-
 
 def daemonize(chdir='/', close=True):
     if os.fork() > 0:
@@ -46,11 +30,17 @@ def daemonize(chdir='/', close=True):
         sys.__stderr__ = sys.stderr = open(os.devnull, 'w')
 
 
+def split(data, encoding='utf-8'):
+    if type(data) is unicode:
+        data = data.encode(encoding)
+    return [unicode(c, encoding) for c in shlex.split(data)]
+
+
 def time_in(time_str):
     now = datetime.datetime.today()
     date = '%s/%s/%s' % (now.year, now.month, now.day)
 
-    for t in shlex.split(time_str.encode('utf-8')):
+    for t in split(time_str):
         start, end = t.split('-', 1)
 
         start = datetime.datetime.strptime(
@@ -62,23 +52,6 @@ def time_in(time_str):
             return True
 
     return False
-
-
-def config_enabled(sect):
-    if not config.has_section(sect):
-        return False
-
-    if not config.getboolean(sect, 'enable'):
-        return False
-
-    try:
-        time_ = config.get(sect, 'time')
-        if time_ and not time_in(time_):
-            return False
-    except:
-        return False
-
-    return True
 
 
 class HTTPClient(object):

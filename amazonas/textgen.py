@@ -5,9 +5,20 @@ import operator
 import collections
 
 from . import db
-from . import util
 from . import parser
 from . import config
+
+
+def getdb(type_, instance):
+    d = config.as_dict('db:%s:%s' % (type_, instance))
+    c = db.getclass(type_, d.pop('type'))
+    return c(**d)
+
+
+def getparser(type_, instance):
+    d = config.as_dict('parser:%s:%s' % (type_, instance))
+    c = parser.getclass(type_, d.pop('type'))
+    return c(**d)
 
 
 class MarkovTable(object):
@@ -19,8 +30,8 @@ class MarkovTable(object):
 
     @classmethod
     def getinstance(cls, instance):
-        return cls(util.getdb(db.DBTYPE_MARKOV, instance),
-                   util.getdb(db.DBTYPE_ENTRYPOINT, instance),
+        return cls(getdb(db.DBTYPE_MARKOV, instance),
+                   getdb(db.DBTYPE_ENTRYPOINT, instance),
                    **config.as_dict('markov:%s' % instance))
 
     def learn(self, itemlist):
@@ -82,7 +93,7 @@ class TextGenerator(object):
     @classmethod
     def getinstance(cls, instance, markov_cls=MarkovTable):
         markov = markov_cls.getinstance(instance)
-        return cls(util.getparser(parser.PARSERTYPE_MORPH, instance), markov,
+        return cls(getparser(parser.PARSERTYPE_MORPH, instance), markov,
                    **config.as_dict('textgen:%s' % instance))
 
     def learn(self, line):

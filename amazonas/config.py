@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import fcntl
-import shlex
 import inspect
 from ConfigParser import SafeConfigParser, NoSectionError, NoOptionError
+
+from . import util
 
 
 class Config(SafeConfigParser):
@@ -65,8 +66,8 @@ class Config(SafeConfigParser):
         return self.get(sect, key, 'boolean')
 
     def getlist(self, sect, key):
-        val = self.get(sect, key).encode(self.ENCODE)
-        return [unicode(v, self.ENCODE) for v in shlex.split(val)]
+        val = self.get(sect, key)
+        return util.split(val, self.ENCODE)
 
     def as_dict(self, sect):
         try:
@@ -74,6 +75,25 @@ class Config(SafeConfigParser):
         except NoSectionError:
             return {}
         return dict([(k, self.get(sect, k)) for k in keys])
+
+
+def enabled(sect):
+    global _CONF
+
+    if not _CONF.has_section(sect):
+        return False
+
+    if not _CONF.getboolean(sect, 'enable'):
+        return False
+
+    try:
+        time_ = _CONF.get(sect, 'time')
+        if time_ and not util.time_in(time_):
+            return False
+    except:
+        return False
+
+    return True
 
 
 _CONF = Config()

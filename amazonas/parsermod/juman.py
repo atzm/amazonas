@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import shlex
 import subprocess
 
+from .. import util
 from .. import parser
 
 
@@ -87,18 +87,13 @@ class Juman(parser.Parser):
                 words.append(unicode(line[:idx - 1], self.encode))
                 line = line[idx:]
 
-            info = shlex.split(line)  # shlex may fail when unicode
+            info = util.split(line, self.encode)
 
             if len(info) != 9:        # ex. multiple candidates found
                 continue
 
-            cls1 = unicode(info[0], self.encode)
-            cls2 = unicode(info[2], self.encode)
-            cls3 = unicode(info[4], self.encode)
-            form = unicode(info[6], self.encode)
-            misc = unicode(info[8], self.encode)
-            misc = None if misc == 'NIL' else misc
-            yield words[0], [cls1, cls2, cls3, form, misc]
+            yield words[0], [info[0], info[2], info[4], info[6],
+                             None if info[8] == 'NIL' else info[8]]
 
     def getproc(self, text):
         self.size += len(text)
