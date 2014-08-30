@@ -77,6 +77,12 @@ def recents(inst):
     return flask.jsonify(recents=list(inst.recent))
 
 
+@mod.route('/<inst>/histories')
+def histories(inst):
+    inst = getinstance(inst)
+    return flask.jsonify(histories=list(inst.history))
+
+
 @mod.route('/<inst>/stats')
 def stats(inst):
     inst = getinstance(inst)

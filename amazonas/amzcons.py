@@ -188,6 +188,18 @@ class ConsoleCommand(Command):
         else:
             self.print('[failed: %d]' % code)
 
+    def cmd_history(self, *args):
+        '''(no arguments required)
+        Print recent generated text.
+        '''
+        code, body = self.client.get(self.path('/histories'))
+        if code == 200:
+            for k in body.get('histories', []):
+                json.dump(k, self.FILE, ensure_ascii=False)
+                self.print()
+        else:
+            self.print('[failed: %d]' % code)
+
     def cmd_stat(self, *args):
         '''(no arguments required)
         Print statistics.
