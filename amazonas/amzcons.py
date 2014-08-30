@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+
 import os
 import sys
 import json
@@ -14,42 +16,111 @@ from . import util
 
 
 class Command(object):
+    FILE = sys.stdout
+
+    def complete(self, text, state):
+        candidates = [n for n, m in self.itercmd() if n.startswith(text)]
+        try:
+            return candidates[state]
+        except:
+            return None
+
+    def print(self, *args, **kwargs):
+        print(file=self.FILE, *args, **kwargs)
+
+    def run(self, cmdline):
+        cmd = self.getcmd(cmdline[0])
+        if callable(cmd):
+            cmd(*cmdline[1:])
+        else:
+            self.print('command not found: %s' % cmdline[0])
+
+    def getcmd(self, name):
+        return getattr(self, 'cmd_' + name, None)
+
+    def itercmd(self):
+        for n, m in inspect.getmembers(self, inspect.ismethod):
+            if n.startswith('cmd_'):
+                yield n[4:], m
+
+    def printhelp(self, cmd_list=None):
+        if cmd_list is None:
+            cmd = inspect.currentframe().f_back.f_code.co_name[4:]
+            cmd_list = [(cmd, self.getcmd(cmd))]
+
+        maxlen = max(len(n) for n in zip(*cmd_list)[0])
+        head_fmt = ' '.join(('%%-%ds' % maxlen, '%s'))
+        body_fmt = ' '.join((' ' * maxlen, '%s'))
+
+        for n, m in cmd_list:
+            if not m.__doc__:
+                self.print(n, end='\n\n')
+                continue
+
+            lines = [s.strip() for s in m.__doc__.strip().splitlines()]
+
+            self.print(head_fmt % (n, lines[0]))
+            for line in lines[1:]:
+                self.print(body_fmt % line)
+            self.print()
+
+    def cmd_help(self, *args):
+        '''[<command>]
+        Print help message.
+        '''
+        if not args:
+            return self.printhelp(list(self.itercmd()))
+
+        cmd = self.getcmd(args[0])
+        if callable(cmd):
+            self.printhelp([(args[0], cmd)])
+        else:
+            self.print('command not found: %s' % args[0])
+
+    def cmd_quit(self, *args):
+        '''(no arguments required)
+        Quit the console.
+        '''
+        raise StopIteration()
+
+
+class ConsoleCommand(Command):
     PATH_PREFIX = '/v0.1'
 
     def __init__(self, instance, host, port):
         self.instance = instance
         self.client = util.HTTPClient(host, port)
 
-    def cmd(self, cmd):
-        return getattr(self, 'cmd_' + cmd, None)
-
     def path(self, path=''):
         p = '/'.join((self.PATH_PREFIX, self.instance))
         return ''.join((p, path))
 
-    def cmd_quit(self, *args):
-        raise StopIteration()
-    cmd_q = cmd_quit
-
     def cmd_print(self, *args):
+        '''(no arguments required)
+        Generate a text and print it / its score.
+        '''
         code, body = self.client.get(self.path())
         if code == 200:
-            print('%s [%f]' % (body['text'], body['score']))
+            self.print('%s [%f]' % (body['text'], body['score']))
         else:
-            print('[failed: %d]' % code)
-    cmd_p = cmd_print
+            self.print('[failed: %d]' % code)
 
     def cmd_learn(self, *args):
-        opts, args = getopt.gnu_getopt(args, 'c:')
+        '''[-c <encoding>] <file>
+        Learn from a file.  The <encoding> is used to decode
+        the text in the <file> (defaults to "utf-8").
+        '''
+        try:
+            opts, args = getopt.gnu_getopt(args, 'c:')
+        except getopt.error:
+            return self.printhelp()
+        if not args:
+            return self.printhelp()
 
         encode = 'utf-8'
         for opt, optarg in opts:
             if opt == '-c':
                 encode = optarg
-
-        if not args:
-            print('syntax: learn [-c encoding] <file>')
-            return
 
         with open(args[0]) as fp:
             fcntl.flock(fp.fileno(), fcntl.LOCK_SH)
@@ -57,69 +128,77 @@ class Command(object):
 
         code, _ = self.client.put(self.path(), {'text': text})
         if code == 204:
-            print('[success]')
+            self.print('[success]')
         else:
-            print('[failed: %d]' % code)
-    cmd_l = cmd_learn
+            self.print('[failed: %d]' % code)
 
-    def cmd_maps(self, *args):
+    def cmd_map(self, *args):
+        '''<key1> [<key2> [...]]
+        Get values of the Markov Table on specified key(s).
+        Keys can be shown by the "key" command.
+        '''
         if not args:
-            print('syntax: maps <key1> <key2> ...')
-            return
+            return self.printhelp()
 
         keys = json.dumps(args, ensure_ascii=False).encode('utf-8')
         path = self.path('/'.join(('/keys', urllib.quote(keys, safe=''))))
         code, body = self.client.get(path)
         if code == 200:
             for v in body.get('values', []):
-                print(v)
+                json.dump(v, self.FILE, ensure_ascii=False)
+                self.print()
         else:
-            print('[failed: %d]' % code)
-    cmd_m = cmd_maps
+            self.print('[failed: %d]' % code)
 
-    def cmd_keys(self, *args):
+    def cmd_key(self, *args):
+        '''(no arguments required)
+        Print keys of the Markov Table.
+        '''
         code, body = self.client.get(self.path('/keys'))
         if code == 200:
             for k in body.get('keys', []):
-                json.dump(k, sys.stdout, ensure_ascii=False)
-                sys.stdout.write('\n')
+                for i in k:
+                    json.dump(i, self.FILE, ensure_ascii=False)
+                    self.print(' ', end='')
+                self.print()
         else:
-            print('[failed: %d]' % code)
-    cmd_k = cmd_keys
+            self.print('[failed: %d]' % code)
 
-    def cmd_entrypoints(self, *args):
+    def cmd_entry(self, *args):
+        '''(no arguments required)
+        Print candidate entrypoints to generate a text.
+        '''
         code, body = self.client.get(self.path('/entrypoints'))
         if code == 200:
             for k in body.get('entrypoints', []):
-                print(k)
+                json.dump(k, self.FILE, ensure_ascii=False)
+                self.print()
         else:
-            print('[failed: %d]' % code)
-    cmd_e = cmd_entrypoints
+            self.print('[failed: %d]' % code)
 
     def cmd_recent(self, *args):
+        '''(no arguments required)
+        Print recent learned text.
+        '''
         code, body = self.client.get(self.path('/recents'))
         if code == 200:
             for k in body.get('recents', []):
-                print(k)
+                json.dump(k, self.FILE, ensure_ascii=False)
+                self.print()
         else:
-            print('[failed: %d]' % code)
-    cmd_r = cmd_recent
+            self.print('[failed: %d]' % code)
 
     def cmd_stat(self, *args):
+        '''(no arguments required)
+        Print statistics.
+        '''
         code, body = self.client.get(self.path('/stats'))
         if code == 200:
-            print('score threshold: %f' % body['threshold'])
-            print('markov keys:     %d' % body['keys'])
-            print('entrypoints:     %d' % body['entrypoints'])
+            self.print('score threshold: %f' % body['threshold'])
+            self.print('markov keys:     %d' % body['keys'])
+            self.print('entrypoints:     %d' % body['entrypoints'])
         else:
-            print('[failed: %d]' % code)
-    cmd_s = cmd_stat
-
-    def cmd_help(self, *args):
-        for n, m in inspect.getmembers(self, inspect.ismethod):
-            if n.startswith('cmd_'):
-                print(n[4:])
-    cmd_h = cmd_help
+            self.print('[failed: %d]' % code)
 
 
 def main():
@@ -146,31 +225,24 @@ def main():
     if not args:
         usage()
 
-    cmd = Command(args[0], host, port)
+    name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
+    cmd = ConsoleCommand(args[0], host, port)
+    readline.set_completer(cmd.complete)
     readline.parse_and_bind('tab: complete')
 
     while True:
         try:
-            line = raw_input('>>> ').strip()
-
-            if not line:
-                continue
-
-            cmdline = util.split(line, fsenc)
-            func = cmd.cmd(cmdline[0])
-
-            if not callable(func):
-                print('command not found: %s' % cmdline[0])
-                continue
-
-            func(*cmdline[1:])
+            line = raw_input('%s> ' % name).strip()
+            if line:
+                cmd.run(util.split(line, fsenc))
 
         except EOFError:
-            sys.stdout.write('\nbye ;)\n')
+            print()
+            print('bye ;)')
             break
 
         except StopIteration:
-            sys.stdout.write('bye ;)\n')
+            print('bye ;)')
             break
 
         except:
