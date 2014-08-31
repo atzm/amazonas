@@ -8,6 +8,10 @@ import urllib2
 import datetime
 
 
+def abspath(path):
+    return os.path.abspath(os.path.expanduser(path))
+
+
 def daemonize(chdir='/', close=True):
     if os.fork() > 0:
         sys.exit(0)

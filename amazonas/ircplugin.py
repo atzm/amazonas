@@ -6,6 +6,8 @@ import glob
 import importlib
 import contextlib
 
+from . import util
+
 
 _PLUGINS_ACTION = {}
 _PLUGINS_COMMAND = {}
@@ -78,7 +80,7 @@ def load(path):
         finally:
             sys.path.pop(0)
 
-    path = os.path.abspath(os.path.expanduser(path))
+    path = util.abspath(path)
     with syspath(path):
         for f in sorted(glob.iglob(os.path.sep.join((path, '*.py')))):
             name = os.path.splitext(os.path.basename(f))[0]

@@ -48,12 +48,12 @@ def main():
 
     for opt, optarg in opts:
         if opt == '-l':
-            logging_config = os.path.abspath(optarg)
+            logging_config = util.abspath(optarg)
 
     if not args:
         usage()
 
-    config.read(os.path.abspath(args[0]))
+    config.read(util.abspath(args[0]))
     load_modules()
 
     if logging_config:
