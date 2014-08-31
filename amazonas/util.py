@@ -3,6 +3,7 @@
 import os
 import sys
 import json
+import email
 import shlex
 import urllib
 import urllib2
@@ -65,29 +66,16 @@ class HTTPClient(object):
         self.port = str(port)
         self.https = bool(https)
         self.charset = str(charset)
+        self.content_handler = {}
 
-    def querystring(self, query):
-        q = {}
-        for k, v in query.iteritems():
-            if type(k) == unicode:
-                k = k.encode(self.charset)
-            if type(v) == unicode:
-                v = v.encode(self.charset)
-            q[k] = v
-        return urllib.urlencode(q)
+        self.set_content_handler('application/json', json.loads)
+        self.set_content_handler('text/javascript',  json.loads)
 
-    def url(self, path, query={}):
-        if self.https:
-            scheme = 'https'
-        else:
-            scheme = 'http'
+    def set_content_handler(self, ctype, func):
+        self.content_handler[ctype] = func
 
-        parts = [scheme, '://', self.host, ':', self.port, path]
-
-        if query:
-            parts.extend(['?', self.querystring(query)])
-
-        return str(''.join(parts))
+    def get_content_handler(self, ctype, default=unicode):
+        return self.content_handler.get(ctype, default)
 
     def get(self, path, **query):
         return self.request('GET', path, query=query)
@@ -108,10 +96,7 @@ class HTTPClient(object):
         try:
             url = self.url(path, query)
             code, info, body = self._request(method, url, body, headers)
-            ctype = info.getheader('content-type', '')
-            if ctype.startswith('application/json'):
-                return code, json.loads(body)
-            return code, body
+            return code, self._parsebody(''.join(info.headers), body)
         except urllib2.HTTPError as e:
             return e.getcode(), ''
 
@@ -120,3 +105,32 @@ class HTTPClient(object):
         req.get_method = lambda: str(method)
         obj = urllib2.urlopen(req)
         return obj.getcode(), obj.info(), obj.read()
+
+    def _parsebody(self, strhdr, body):
+        message = email.message_from_string(strhdr)
+        ctype = message.get_content_type()
+        charset = message.get_content_charset() or self.charset
+        return self.get_content_handler(ctype)(body, encoding=charset)
+
+    def url(self, path, query={}):
+        if self.https:
+            scheme = 'https'
+        else:
+            scheme = 'http'
+
+        parts = [scheme, '://', self.host, ':', self.port, path]
+
+        if query:
+            parts.extend(['?', self.querystring(query)])
+
+        return str(''.join(parts))
+
+    def querystring(self, query):
+        q = {}
+        for k, v in query.iteritems():
+            if type(k) == unicode:
+                k = k.encode(self.charset)
+            if type(v) == unicode:
+                v = v.encode(self.charset)
+            q[k] = v
+        return urllib.urlencode(q)

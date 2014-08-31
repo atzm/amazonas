@@ -32,6 +32,13 @@ time    = 09:00-12:00 13:00-17:30
 enable  = true
 message = 寝ます
 
+[command:suggest]
+enable    = true
+locale    = ja
+limit     = 3
+randomize = true
+notfound  = 見つかりませんでした
+
 [action:0]
 enable       = true
 pattern      = .
