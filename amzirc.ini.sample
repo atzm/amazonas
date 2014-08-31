@@ -16,6 +16,9 @@ path = /path/to/your/plugin/dir
 enable = true
 time   = 09:00-12:00 13:00-17:30
 
+[command:help]
+enable = true
+
 [command:version]
 enable = true
 

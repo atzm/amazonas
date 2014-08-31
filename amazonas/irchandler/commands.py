@@ -8,31 +8,64 @@ from .. import config
 from .. import ircplugin
 
 
+@ircplugin.command('help')
+def help(ircbot, conn, event, msgfrom, replyto, *args):
+    '''[<command>]
+    Display help message.
+    '''
+    cmdlist = []
+    for name, cmds in ircplugin.itercommands():
+        if args and args[0] != name:
+            continue
+        if not config.enabled('command:%s' % name):
+            continue
+        for cmd in cmds:
+            cmdlist.append((name, cmd))
+
+    for line in util.formathelp(cmdlist).splitlines():
+        conn.notice(replyto, line.rstrip())
+
+
 @ircplugin.command('version')
 def version(ircbot, conn, event, msgfrom, replyto, *args):
+    '''(no arguments required)
+    Display version information.
+    '''
     conn.notice(replyto, 'amazonas/0.0.1')
 
 
 @ircplugin.command('reload')
 def reload(ircbot, conn, event, msgfrom, replyto, *args):
+    '''(no arguments required)
+    Reload configuration.
+    '''
     config.reload()
     logging.info('config reloaded')
 
 
 @ircplugin.command('activate')
 def activate(ircbot, conn, event, msgfrom, replyto, *args):
+    '''(no arguments required)
+    Enable any actions.
+    '''
     ircbot.action_active = True
     logging.info('activated')
 
 
 @ircplugin.command('deactivate')
 def deactivate(ircbot, conn, event, msgfrom, replyto, *args):
+    '''(no arguments required)
+    Disable any actions.
+    '''
     ircbot.action_active = False
     logging.info('deactivated')
 
 
 @ircplugin.command('suggest')
 def suggest(ircbot, conn, event, msgfrom, replyto, *args):
+    '''<val1> [<val2> [...]]
+    Display suggestion(s) from specified values.
+    '''
     locale = config.get('command:suggest', 'locale') or 'en'
     limit = config.getint('command:suggest', 'limit') or 1
     randomize = config.getboolean('command:suggest', 'randomize')

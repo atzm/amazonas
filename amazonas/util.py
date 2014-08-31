@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+
 import os
 import sys
 import json
@@ -8,6 +10,7 @@ import shlex
 import urllib
 import urllib2
 import datetime
+import cStringIO
 
 
 def abspath(path):
@@ -58,6 +61,36 @@ def time_in(time_str):
             return True
 
     return False
+
+
+def formathelp(cmdlist):
+    io = cStringIO.StringIO()
+
+    maxlen = max(len(n) for n in zip(*cmdlist)[0])
+    head_fmt = ' '.join(('%%-%ds' % maxlen, '%s'))
+    body_fmt = ' '.join((' ' * maxlen, '%s'))
+
+    for n, m in cmdlist:
+        if not m.__doc__:
+            print(n, end='\n\n', file=io)
+            continue
+
+        doc = m.__doc__.strip()
+
+        if not doc:
+            print(n, end='\n\n', file=io)
+            continue
+
+        lines = [s.strip() for s in doc.splitlines()]
+
+        print(head_fmt % (n, lines[0]), file=io)
+
+        for line in lines[1:]:
+            print(body_fmt % line, file=io)
+
+        print(file=io)
+
+    return io.getvalue().strip()
 
 
 class HTTPClient(object):

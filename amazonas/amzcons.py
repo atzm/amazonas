@@ -43,32 +43,15 @@ class Command(object):
             if n.startswith('cmd_'):
                 yield n[4:], m
 
-    def printhelp(self, cmd_list=None):
-        if cmd_list is None:
+    def printhelp(self, cmdlist=None):
+        if cmdlist is None:
             cmd = inspect.currentframe().f_back.f_code.co_name[4:]
-            cmd_list = [(cmd, self.getcmd(cmd))]
-
-        maxlen = max(len(n) for n in zip(*cmd_list)[0])
-        head_fmt = ' '.join(('%%-%ds' % maxlen, '%s'))
-        body_fmt = ' '.join((' ' * maxlen, '%s'))
-
-        for n, m in cmd_list:
-            doc = m.__doc__.strip()
-
-            if not doc:
-                self.print(n, end='\n\n')
-                continue
-
-            lines = [s.strip() for s in doc.splitlines()]
-
-            self.print(head_fmt % (n, lines[0]))
-            for line in lines[1:]:
-                self.print(body_fmt % line)
-            self.print()
+            cmdlist = [(cmd, self.getcmd(cmd))]
+        self.print(util.formathelp(cmdlist))
 
     def cmd_help(self, *args):
         '''[<command>]
-        Print help message.
+        Display help message.
         '''
         if not args:
             return self.printhelp(list(self.itercmd()))
@@ -99,7 +82,7 @@ class ConsoleCommand(Command):
 
     def cmd_print(self, *args):
         '''(no arguments required)
-        Generate a text and print it / its score.
+        Generate a text and display it / its score.
         '''
         code, body = self.client.get(self.path())
         if code == 200:
@@ -154,7 +137,7 @@ class ConsoleCommand(Command):
 
     def cmd_key(self, *args):
         '''(no arguments required)
-        Print keys of the Markov Table.
+        Display keys of the Markov Table.
         '''
         code, body = self.client.get(self.path('/keys'))
         if code == 200:
@@ -168,7 +151,7 @@ class ConsoleCommand(Command):
 
     def cmd_entry(self, *args):
         '''(no arguments required)
-        Print candidate entrypoints to generate a text.
+        Display candidate entrypoints to generate a text.
         '''
         code, body = self.client.get(self.path('/entrypoints'))
         if code == 200:
@@ -180,7 +163,7 @@ class ConsoleCommand(Command):
 
     def cmd_rentry(self, *args):
         '''(no arguments required)
-        Print recent learned candidate entrypoints.
+        Display recent learned candidate entrypoints.
         '''
         code, body = self.client.get(self.path('/entrypoints/recents'))
         if code == 200:
@@ -192,7 +175,7 @@ class ConsoleCommand(Command):
 
     def cmd_history(self, *args):
         '''(no arguments required)
-        Print recent generated text.
+        Display recent generated text.
         '''
         code, body = self.client.get(self.path('/histories'))
         if code == 200:
@@ -204,7 +187,7 @@ class ConsoleCommand(Command):
 
     def cmd_stat(self, *args):
         '''(no arguments required)
-        Print statistics.
+        Display statistics.
         '''
         code, body = self.client.get(self.path('/stats'))
         if code == 200:
