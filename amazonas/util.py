@@ -4,6 +4,7 @@ import os
 import sys
 import json
 import shlex
+import urllib
 import urllib2
 import datetime
 
@@ -59,30 +60,54 @@ def time_in(time_str):
 
 
 class HTTPClient(object):
-    def __init__(self, host, port):
+    def __init__(self, host, port, https=False, charset='utf-8'):
         self.host = str(host)
-        self.port = int(port)
+        self.port = str(port)
+        self.https = bool(https)
+        self.charset = str(charset)
 
-    def url(self, path):
-        return str(''.join(('http://', self.host, ':', str(self.port), path)))
+    def querystring(self, query):
+        q = {}
+        for k, v in query.iteritems():
+            if type(k) == unicode:
+                k = k.encode(self.charset)
+            if type(v) == unicode:
+                v = v.encode(self.charset)
+            q[k] = v
+        return urllib.urlencode(q)
 
-    def get(self, path):
-        return self.request('GET', path)
+    def url(self, path, query={}):
+        if self.https:
+            scheme = 'https'
+        else:
+            scheme = 'http'
 
-    def put(self, path, body):
-        return self.request('PUT', path, body)
+        parts = [scheme, '://', self.host, ':', self.port, path]
 
-    def post(self, path, body):
-        return self.request('POST', path, body)
+        if query:
+            parts.extend(['?', self.querystring(query)])
 
-    def request(self, method, path, body=None, headers={}):
+        return str(''.join(parts))
+
+    def get(self, path, **query):
+        return self.request('GET', path, query=query)
+
+    def put(self, path, body, **query):
+        return self.request('PUT', path, body=body, query=query)
+
+    def post(self, path, body, **query):
+        return self.request('POST', path, body=body, query=query)
+
+    def request(self, method, path, body=None, query={}, headers={}):
         if body is not None:
-            body = json.dumps(body, ensure_ascii=False).encode('utf-8')
+            body = json.dumps(body, ensure_ascii=False).encode(self.charset)
+            ctype = 'application/json; charset=%s' % self.charset.upper()
             headers = headers.copy()
-            headers.update({'Content-Type': 'application/json; charset=UTF-8'})
+            headers['Content-Type'] = ctype
 
         try:
-            code, info, body = self._request(method, path, body, headers)
+            url = self.url(path, query)
+            code, info, body = self._request(method, url, body, headers)
             ctype = info.getheader('content-type', '')
             if ctype.startswith('application/json'):
                 return code, json.loads(body)
@@ -90,8 +115,7 @@ class HTTPClient(object):
         except urllib2.HTTPError as e:
             return e.getcode(), ''
 
-    def _request(self, method, path, body, headers={}):
-        url = self.url(path)
+    def _request(self, method, url, body, headers={}):
         req = urllib2.Request(url, body, headers)
         req.get_method = lambda: str(method)
         obj = urllib2.urlopen(req)
