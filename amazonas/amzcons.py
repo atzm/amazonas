@@ -53,11 +53,13 @@ class Command(object):
         body_fmt = ' '.join((' ' * maxlen, '%s'))
 
         for n, m in cmd_list:
-            if not m.__doc__:
+            doc = m.__doc__.strip()
+
+            if not doc:
                 self.print(n, end='\n\n')
                 continue
 
-            lines = [s.strip() for s in m.__doc__.strip().splitlines()]
+            lines = [s.strip() for s in doc.splitlines()]
 
             self.print(head_fmt % (n, lines[0]))
             for line in lines[1:]:
