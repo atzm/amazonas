@@ -106,8 +106,11 @@ class HTTPClient(object):
     def set_content_handler(self, ctype, func):
         self.content_handler[ctype] = func
 
-    def get_content_handler(self, ctype, default=unicode):
+    def get_content_handler(self, ctype, default=lambda x: x):
         return self.content_handler.get(ctype, default)
+
+    def del_content_handler(self, ctype):
+        self.content_handler.pop(ctype, None)
 
     def get(self, path, **query):
         return self.request('GET', path, query=query)
@@ -142,7 +145,8 @@ class HTTPClient(object):
         message = email.message_from_string(strhdr)
         ctype = message.get_content_type()
         charset = message.get_content_charset() or self.charset
-        return self.get_content_handler(ctype)(body, encoding=charset)
+        body = unicode(body, charset, 'replace')
+        return self.get_content_handler(ctype)(body)
 
     def url(self, path, query={}):
         if self.https:
