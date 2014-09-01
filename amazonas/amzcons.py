@@ -229,9 +229,9 @@ def main():
 
     while True:
         try:
-            line = raw_input('%s> ' % name).strip()
+            line = unicode(raw_input('%s> ' % name).strip(), fsenc)
             if line:
-                cmd.run(util.split(line, fsenc))
+                cmd.run(util.split(line))
 
         except EOFError:
             print()

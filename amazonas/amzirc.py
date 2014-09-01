@@ -62,10 +62,8 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         self._handle_action(conn, event, msgfrom, replyto, msg)
 
     def _handle_command(self, conn, event, msgfrom, replyto, msg):
-        encode = config.get('irc', 'encode')
-
         try:
-            words = util.split(msg, encode)
+            words = util.split(msg)
         except:
             logging.exception('parse error: "%s"', msg)
             return

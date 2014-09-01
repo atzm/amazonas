@@ -76,7 +76,7 @@ class Juman(parser.Parser):
         p.stdin.flush()
 
         while True:
-            line = p.stdout.readline().rstrip()
+            line = unicode(p.stdout.readline().rstrip(), self.encode)
             if not line or line == 'EOS':
                 break
 
@@ -84,10 +84,10 @@ class Juman(parser.Parser):
             words = []
             for x in xrange(3):
                 idx = line[1:].index(' ') + 2
-                words.append(unicode(line[:idx - 1], self.encode))
+                words.append(line[:idx - 1])
                 line = line[idx:]
 
-            info = util.split(line, self.encode)
+            info = util.split(line)
 
             if len(info) != 9:        # ex. multiple candidates found
                 continue

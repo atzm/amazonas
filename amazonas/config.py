@@ -67,7 +67,7 @@ class Config(SafeConfigParser):
 
     def getlist(self, sect, key):
         val = self.get(sect, key)
-        return util.split(val, self.ENCODE)
+        return util.split(val)
 
     def as_dict(self, sect):
         try:

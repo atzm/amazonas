@@ -39,10 +39,9 @@ def daemonize(chdir='/', close=True):
         sys.__stderr__ = sys.stderr = open(os.devnull, 'w')
 
 
-def split(data, encoding='utf-8'):
-    if type(data) is unicode:
-        data = data.encode(encoding)
-    return [unicode(c, encoding) for c in shlex.split(data)]
+def split(data):
+    data = data.encode('utf-8', 'replace')
+    return [unicode(c, 'utf-8', 'replace') for c in shlex.split(data)]
 
 
 def time_in(time_str):
