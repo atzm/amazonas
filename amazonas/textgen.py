@@ -84,7 +84,7 @@ class TextGenerator(object):
         self.markov = markov
 
         self.nr_retry = int(kw.get('nr_retry', 50))
-        self.nr_history = int(kw.get('nr_history', 10))
+        self.nr_history = int(kw.get('nr_history', 50))
         self.nr_wordclass = int(kw.get('nr_wordclass', 100))
         self.nr_entrypoint = int(kw.get('nr_entrypoint', 100))
         self.score_threshold = float(kw.get('score_threshold', 0.0))
@@ -108,6 +108,7 @@ class TextGenerator(object):
         self.markov.learn(zipped[0])
         self.wordclass.append(zip(*zipped[1])[0])
         self.entrypoint.extend(self.parser.entrypoints(info))
+        self.history.append(line)
 
     def run(self):
         for x in xrange(self.nr_retry):
@@ -122,7 +123,7 @@ class TextGenerator(object):
                 continue
             if not text:
                 continue
-            if text in self.history:
+            if self.history_contains(text):
                 continue
 
             parsed = tuple(self.parser.parse(text))
@@ -143,6 +144,12 @@ class TextGenerator(object):
             return 1.0
         dist = [self.distance(wordclass, wcls) for wcls in self.wordclass]
         return 1.0 / (float(sum(dist)) / len(dist))
+
+    def history_contains(self, text):
+        for line in self.history:
+            if text in line:
+                return True
+        return False
 
     @staticmethod
     def distance(a, b, op=operator.eq):

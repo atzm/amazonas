@@ -175,7 +175,7 @@ class ConsoleCommand(Command):
 
     def cmd_history(self, *args):
         '''(no arguments required)
-        Display recent generated text.
+        Display recent learned/generated text.
         '''
         code, body = self.client.get(self.path('/histories'))
         if code == 200:
