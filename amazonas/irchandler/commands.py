@@ -40,7 +40,7 @@ def reload(ircbot, conn, event, msgfrom, replyto, *args):
     Reload configuration.
     '''
     config.reload()
-    logging.info('config reloaded')
+    logging.info('[reload] config reloaded')
 
 
 @ircplugin.command('activate')
@@ -49,7 +49,7 @@ def activate(ircbot, conn, event, msgfrom, replyto, *args):
     Enable any actions.
     '''
     ircbot.action_active = True
-    logging.info('activated')
+    logging.info('[activate] activated')
 
 
 @ircplugin.command('deactivate')
@@ -58,7 +58,7 @@ def deactivate(ircbot, conn, event, msgfrom, replyto, *args):
     Disable any actions.
     '''
     ircbot.action_active = False
-    logging.info('deactivated')
+    logging.info('[deactivate] deactivated')
 
 
 @ircplugin.command('suggest')

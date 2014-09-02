@@ -12,10 +12,16 @@ def null(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
     pass
 
 
+@ircplugin.action('log')
+def log(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
+    func = getattr(logging, conf.get('level', 'info'), logging.info)
+    func('[log]  [%s] %s> %s', replyto, msgfrom, msg)
+
+
 @ircplugin.action('oper')
 def oper(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
     if not replyto or not msgfrom:
-        logging.error('cannot exec "oper" with "replyto:%s", "msgfrom:%s"',
+        logging.error('[oper] cannot exec with "replyto:%s", "msgfrom:%s"',
                       replyto, msgfrom)
         return
     conn.mode(replyto, '+o %s' % msgfrom)
@@ -24,7 +30,7 @@ def oper(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
 @ircplugin.action('disoper')
 def disoper(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
     if not replyto or not msgfrom:
-        logging.error('cannot exec "disoper" with "replyto:%s", "msgfrom:%s"',
+        logging.error('[disoper] cannot exec with "replyto:%s", "msgfrom:%s"',
                       replyto, msgfrom)
         return
     conn.mode(replyto, '-o %s' % msgfrom)
@@ -33,7 +39,7 @@ def disoper(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
 @ircplugin.action('learn')
 def learn(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
     if not msg:
-        logging.error('cannot exec "learn" without any messages')
+        logging.error('[learn] cannot exec without any messages')
         return
 
     replace_nick = conf.get('replace_nick', '')
@@ -44,10 +50,8 @@ def learn(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
     path = '/'.join(('/v0.1', conf['instance']))
 
     code, _ = client.put(path, {'text': [msg]})
-    if code == 204:
-        logging.info('learning success: %s', msg)
-    else:
-        logging.warn('learning failed: %s', msg)
+    if code != 204:
+        logging.warn('[learn] failed with %d / "%s"', code, msg)
 
 
 @ircplugin.action('talk')
@@ -58,6 +62,7 @@ def talk(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
     code, body = client.get(path)
     if code == 200:
         conn.notice(replyto, body['text'])
-        logging.info('talked: [%s] %s', replyto, body['text'])
+        logging.info('[talk] [%s] %s> %s',
+                     replyto, conn.get_nickname(), body['text'])
     else:
-        logging.warn('failed to get a text: %d', code)
+        logging.warn('[talk] failed with %d', code)

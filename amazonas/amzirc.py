@@ -41,7 +41,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
     def on_welcome(self, conn, event):
         channel = config.get('irc', 'channel')
         conn.join(channel)
-        logging.info('joined channel "%s"', channel)
+        logging.info('[welcome] joined <%s>', channel)
         self._register_periodic(channel)
 
     def on_nicknameinuse(self, conn, event):
@@ -65,7 +65,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         try:
             words = util.split(msg)
         except:
-            logging.exception('parse error: "%s"', msg)
+            logging.exception('[command] parse error: "%s"', msg)
             return
 
         sect = 'command:%s' % words[0]
@@ -77,7 +77,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             try:
                 handler(self, conn, event, msgfrom, replyto, *words[1:])
             except:
-                logging.exception('command error: "%s.%s" / "%s"',
+                logging.exception('[command] error: <%s.%s> / "%s"',
                                   handler.__module__, handler.__name__, msg)
 
         self._send_message(conn, replyto, sect)
@@ -104,19 +104,20 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 
         action = config.get(sect, 'action')
         if not action:
-            logging.error('[%s] no action specified', sect)
+            logging.error('[action] [%s] no action specified', sect)
             return False
 
         if msg:  # if not periodic run
             pattern = config.get(sect, 'pattern')
             if not pattern:
-                logging.error('[%s] no pattern specified', sect)
+                logging.error('[action] [%s] no pattern specified', sect)
                 return False
 
             try:
                 regex = re.compile(pattern)
             except:
-                logging.exception('[%s] pattern compilation failed', sect)
+                logging.exception('[action] [%s] pattern compilation failed',
+                                  sect)
                 return False
 
             match = regex.search(msg)
@@ -131,7 +132,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
                 handler(self, match, config.as_dict(sect),
                         conn, event, msgfrom, replyto, msg)
             except:
-                logging.exception('[%s] action error: "%s.%s" / "%s"',
+                logging.exception('[action] [%s] error: <%s.%s> / "%s"',
                                   sect, handler.__module__,
                                   handler.__name__, msg)
 
@@ -147,23 +148,23 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             # if do, the disabled action will not be registered forever.
 
             if not config.has_option(sect, 'action'):
-                logging.error('no action specified: %s', sect)
+                logging.error('[periodic] [%s] no action specified', sect)
                 continue
 
             action = 'action:%s' % config.get(sect, 'action')
             if not config.has_section(action):
-                logging.error('invalid action specified: %s', sect)
+                logging.error('[periodic] [%s] invalid action specified', sect)
                 continue
 
             interval = config.getint(sect, 'interval')
             if interval < 60:
-                logging.error('interval too short, ignored: %s', sect)
+                logging.error('[periodic] [%s] interval too short', sect)
                 continue
 
             self.connection.execute_every(interval, self._do_act,
                                           (action, self.connection, None,
                                            None, channel, None, sect))
-            logging.info('registered periodic action: "%s"', sect)
+            logging.info('[periodic] [%s] registered', sect)
 
     def _send_message(self, conn, replyto, sect):
         message = config.get(sect, 'message')
@@ -207,23 +208,20 @@ def main():
                          os.path.basename(sys.argv[0]))
 
     def log_modules():
-        logging.info('loaded actions:')
         for name, actions in ircplugin.iteractions():
-            logging.info('  %s:', name)
             for act in actions:
-                logging.info('    - %s.%s', act.__module__, act.__name__)
+                logging.info('[plugin] [action] [%s] <%s.%s> loaded',
+                             name, act.__module__, act.__name__)
 
-        logging.info('loaded commands:')
         for name, commands in ircplugin.itercommands():
-            logging.info('  %s:', name)
             for comm in commands:
-                logging.info('    - %s.%s', comm.__module__, comm.__name__)
+                logging.info('[plugin] [command] [%s] <%s.%s> loaded',
+                             name, comm.__module__, comm.__name__)
 
-        logging.info('loaded events:')
         for name, events in ircplugin.iterevents():
-            logging.info('  %s:', name)
             for evt in events:
-                logging.info('    - %s.%s', evt.__module__, evt.__name__)
+                logging.info('[plugin] [event] [%s] <%s.%s> loaded',
+                             name, evt.__module__, evt.__name__)
 
     @contextlib.contextmanager
     def sigexit(bot, *sigs):
