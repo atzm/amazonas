@@ -8,6 +8,8 @@ nick         = amazonas
 channel      = #amazonas
 encode       = utf-8
 quit_message = さようなら
+actions      = mylog mylearn mytalk myoper mynull
+schedules    = myschedule
 
 [plugin]
 path = /path/to/your/plugin/dir
@@ -42,14 +44,14 @@ limit     = 3
 randomize = true
 notfound  = 見つかりませんでした
 
-[action:0]
+[action:mylog]
 enable       = true
 pattern      = .
 action       = log
 fallthrough  = true
 level        = info
 
-[action:1]
+[action:mylearn]
 enable       = true
 pattern      = .
 action       = learn
@@ -59,7 +61,7 @@ port         = 8349
 instance     = first
 replace_nick = amazonas
 
-[action:2]
+[action:mytalk]
 enable      = true
 pattern     = amazonas
 action      = talk
@@ -68,7 +70,7 @@ server      = 127.0.0.1
 port        = 8349
 instance    = first
 
-[action:3]
+[action:myoper]
 enable      = true
 pattern     = なると(くれ|ください|ちょうだい)
 action      = oper
@@ -76,15 +78,15 @@ fallthrough = false
 message     = はいよ
 time        = 06:00-20:00
 
-[action:4]
+[action:mynull]
 enable      = true
 pattern     = あとひといきじゃ
 action      = null
 fallthrough = false
 message     = パワーをメテオに
 
-[periodic_action:0]
+[schedule:myschedule]
 enable   = true
-action   = 2
+action   = mytalk
 interval = 1234
 time     = 09:00-12:00 13:00-17:30

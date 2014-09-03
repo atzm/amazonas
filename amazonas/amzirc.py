@@ -33,72 +33,66 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 
         super(IRCBot, self).__init__([spec], nick, nick)
         self.action_active = True
-
-        for name, handlers in ircplugin.iterevents():
-            for handler in handlers:
-                self.connection.add_global_handler(name, handler)
+        self.register_events()
 
     def on_welcome(self, conn, event):
         channel = config.get('irc', 'channel')
         conn.join(channel)
         logging.info('[welcome] joined <%s>', channel)
-        self._register_periodic(channel)
+        self.schedule()
 
     def on_nicknameinuse(self, conn, event):
         conn.nick(conn.get_nickname() + '_')
 
     def on_privmsg(self, conn, event):
-        return self.on_pubmsg(conn, event, replyto=event.source.nick)
+        self.handle_message(conn, event, event.source.nick,
+                            event.source.nick, event.arguments[0])
 
     def on_pubmsg(self, conn, event, replyto=None):
-        msg = event.arguments[0]
-        msgfrom = event.source.nick
-        if replyto is None:
-            replyto = event.target
+        self.handle_message(conn, event, event.source.nick,
+                            event.target, event.arguments[0])
 
+    def send_message(self, conn, replyto, sect):
+        message = config.get(sect, 'message')
+        if message:
+            conn.notice(replyto, message)
+
+    def handle_message(self, conn, event, msgfrom, replyto, msg):
         if msg.startswith('!'):
-            return self._handle_command(conn, event, msgfrom, replyto, msg[1:])
+            return self.handle_command(conn, event, msgfrom, replyto, msg[1:])
 
-        self._handle_action(conn, event, msgfrom, replyto, msg)
+        self.handle_action(conn, event, msgfrom, replyto, msg)
 
-    def _handle_command(self, conn, event, msgfrom, replyto, msg):
+    def handle_command(self, conn, event, msgfrom, replyto, msg):
         try:
             words = util.split(msg)
-        except:
-            logging.exception('[command] parse error: "%s"', msg)
+        except Exception as e:
+            conn.notice(replyto, str(e))
+            logging.error('[command] %s: "%s"', str(e), msg)
             return
 
-        sect = 'command:%s' % words[0]
-
+        sect = ':'.join(('command', words[0]))
         if not config.enabled(sect):
             return
 
         for handler in ircplugin.getcommand(words[0]):
-            try:
-                handler(self, conn, event, msgfrom, replyto, *words[1:])
-            except:
-                logging.exception('[command] error: <%s.%s> / "%s"',
-                                  handler.__module__, handler.__name__, msg)
+            with exceptlog(sect, handler, msg) as run:
+                run(self, conn, event, msgfrom, replyto, *words[1:])
 
-        self._send_message(conn, replyto, sect)
+        self.send_message(conn, replyto, sect)
 
-    def _handle_action(self, conn, event, msgfrom, replyto, msg):
-        for sect in sorted(config.sections()):
-            if not sect.startswith('action:'):
-                continue
-
-            succeeded = self._do_act(sect, conn, event, msgfrom, replyto, msg)
-            if succeeded and not config.getboolean(sect, 'fallthrough'):
+    def handle_action(self, conn, event, msgfrom, replyto, msg):
+        for action in config.getlist('irc', 'actions'):
+            sect = ':'.join(('action', action))
+            success = self.do_action(sect, conn, event, msgfrom, replyto, msg)
+            if success and not config.getboolean(sect, 'fallthrough'):
                 break
 
-    def _do_act(self, sect, conn, event, msgfrom, replyto, msg, period=None):
+    def do_action(self, sect, conn, event, msgfrom, replyto, msg, sched=None):
         if not self.action_active:
             return True
-
-        if period:
-            if not config.enabled(period):
-                return False
-
+        if sched and not config.enabled(sched):
+            return False
         if not config.enabled(sect):
             return False
 
@@ -107,69 +101,80 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             logging.error('[action] [%s] no action specified', sect)
             return False
 
-        if msg:  # if not periodic run
-            pattern = config.get(sect, 'pattern')
-            if not pattern:
-                logging.error('[action] [%s] no pattern specified', sect)
-                return False
-
+        if msg:
             try:
-                regex = re.compile(pattern)
-            except:
-                logging.exception('[action] [%s] pattern compilation failed',
-                                  sect)
+                match = self.do_match(sect, msg)
+            except Exception as e:
+                logging.error('[action] [%s] %s', sect, str(e))
                 return False
-
-            match = regex.search(msg)
-            if match is None:
+            if not match:
                 return False
-
         else:
             match = None
 
         for handler in ircplugin.getaction(action):
-            try:
-                handler(self, match, config.as_dict(sect),
-                        conn, event, msgfrom, replyto, msg)
-            except:
-                logging.exception('[action] [%s] error: <%s.%s> / "%s"',
-                                  sect, handler.__module__,
-                                  handler.__name__, msg)
+            with exceptlog(sect, handler, msg) as run:
+                conf = config.as_dict(sect)
+                run(self, match, conf, conn, event, msgfrom, replyto, msg)
 
-        self._send_message(conn, replyto, sect)
+        self.send_message(conn, replyto, sect)
         return True
 
-    def _register_periodic(self, channel):
-        for sect in sorted(config.sections()):
-            if not sect.startswith('periodic_action:'):
+    def do_match(self, sect, msg):
+        pattern = config.get(sect, 'pattern')
+        if not pattern:
+            raise ValueError('no pattern specified')
+
+        return re.search(pattern, msg)
+
+    def schedule(self):
+        channel = config.get('irc', 'channel')
+
+        for schedule in config.getlist('irc', 'schedules'):
+            sect = ':'.join(('schedule', schedule))
+
+            # do not evaluate config.enabled() here.
+            # if it does, the disabled action will never be scheduled.
+            if not config.has_section(sect):
+                logging.error('[schedule] [%s] no such schedule', sect)
                 continue
 
-            # do not evaluate config.enabled() while registering.
-            # if do, the disabled action will not be registered forever.
-
             if not config.has_option(sect, 'action'):
-                logging.error('[periodic] [%s] no action specified', sect)
+                logging.error('[schedule] [%s] no action specified', sect)
                 continue
 
             action = 'action:%s' % config.get(sect, 'action')
             if not config.has_section(action):
-                logging.error('[periodic] [%s] invalid action specified', sect)
+                logging.error('[schedule] [%s] invalid action specified', sect)
                 continue
 
             interval = config.getint(sect, 'interval')
             if interval < 60:
-                logging.error('[periodic] [%s] interval too short', sect)
+                logging.error('[schedule] [%s] interval too short', sect)
                 continue
 
-            self.connection.execute_every(interval, self._do_act,
+            self.connection.execute_every(interval, self.do_action,
                                           (action, self.connection, None,
                                            None, channel, None, sect))
-            logging.info('[periodic] [%s] registered', sect)
+            logging.info('[schedule] [%s] registered', sect)
 
-    def _send_message(self, conn, replyto, sect):
-        message = config.get(sect, 'message')
+    def register_events(self):
+        for name, handlers in ircplugin.iterevents():
+            for handler in handlers:
+                self.connection.add_global_handler(name, handler)
+
+
+@contextlib.contextmanager
+def exceptlog(name, func, message=None):
+    try:
+        yield func
+    except Exception as e:
+        msg = '[%s] %s: <%s.%s>' % (name, str(e),
+                                    func.__module__, func.__name__)
         if message:
-            conn.notice(replyto, message)
+            msg += ' / "%s"' % message
+
+        logging.exception(msg)
 
 
 # XXX: python-irc is hardcoded the encoding utf-8 ...
@@ -223,19 +228,6 @@ def main():
                 logging.info('[plugin] [event] [%s] <%s.%s> loaded',
                              name, evt.__module__, evt.__name__)
 
-    @contextlib.contextmanager
-    def sigexit(bot, *sigs):
-        def q():
-            bot.die(config.get('irc', 'quit_message'))
-            raise SystemExit()
-        try:
-            for sig in sigs:
-                signal.signal(sig, lambda *_: q())
-            yield bot
-        finally:
-            for sig in sigs:
-                signal.signal(sig, signal.SIG_DFL)
-
     logging_config = None
 
     try:
@@ -269,8 +261,17 @@ def main():
         util.daemonize()
 
     with encoding(config.get('irc', 'encode')):
-        with sigexit(IRCBot(), signal.SIGINT, signal.SIGTERM) as bot:
-            bot.start()
+        bot = IRCBot()
+
+        def q(*args, **kwargs):
+            bot.die(config.get('irc', 'quit_message'))
+            raise SystemExit()
+
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            signal.signal(sig, q)
+
+        with exceptlog('main', bot.start) as run:
+            run()
 
 
 if __name__ == '__main__':
