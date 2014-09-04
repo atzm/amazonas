@@ -9,6 +9,7 @@ import fcntl
 import getopt
 import urllib
 import inspect
+import argparse
 import readline
 import traceback
 
@@ -199,31 +200,19 @@ class ConsoleCommand(Command):
 
 
 def main():
-    def usage():
-        raise SystemExit('syntax: %s [-h host] [-p port] <instance>' %
-                         os.path.basename(sys.argv[0]))
+    ap = argparse.ArgumentParser()
+    ap.add_argument('-a', '--address', type=str, default='localhost',
+                    help='address or hostname of the API server')
+    ap.add_argument('-p', '--port', type=int, default=8349,
+                    help='port number of the API server')
+    ap.add_argument('instance', type=str,
+                    help='instance name to control')
+    args = ap.parse_args()
 
+    cmd = ConsoleCommand(args.instance, args.address, args.port)
+    name = os.path.splitext(ap.prog)[0]
     fsenc = sys.getfilesystemencoding()
-    host = 'localhost'
-    port = 8349
 
-    try:
-        opts, args = getopt.gnu_getopt(sys.argv[1:], 'h:p:')
-    except getopt.error:
-        usage()
-
-    for opt, optarg in opts:
-        if opt == '-h':
-            host = optarg
-        elif opt == '-p':
-            port = int(optarg)
-            assert(0 <= port <= 65535)
-
-    if not args:
-        usage()
-
-    name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
-    cmd = ConsoleCommand(args[0], host, port)
     readline.set_completer(cmd.complete)
     readline.parse_and_bind('tab: complete')
 

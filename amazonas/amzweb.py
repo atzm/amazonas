@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import os
-import sys
-import getopt
 import logging
 import logging.config
+import argparse
 
 import flask
 
@@ -19,18 +17,13 @@ from .webapp import instance
 
 
 def main():
-    def usage():
-        raise SystemExit('syntax: %s [-l <logging_config>] <config>' %
-                         os.path.basename(sys.argv[0]))
-
-    def load_modules():
+    def loadmodules():
         for m in config.getlist('module', 'parsers'):
             parser.loadmodule(m)
-
         for m in config.getlist('module', 'databases'):
             db.loadmodule(m)
 
-    def run_app(name):
+    def runapp(name):
         app = flask.Flask(name)
         app.config['JSON_AS_ASCII'] = False
         app.register_blueprint(v01.mod)
@@ -39,25 +32,18 @@ def main():
                 debug=config.getboolean('web', 'debug'),
                 use_reloader=False)
 
-    logging_config = None
+    ap = argparse.ArgumentParser()
+    ap.add_argument('-l', '--logging-config', type=util.abspath,
+                    help='configuration file for the logging')
+    ap.add_argument('config', type=util.abspath,
+                    help='configuration file for the API server')
+    args = ap.parse_args()
 
-    try:
-        opts, args = getopt.gnu_getopt(sys.argv[1:], 'l:')
-    except getopt.error:
-        usage()
+    config.read(args.config)
+    loadmodules()
 
-    for opt, optarg in opts:
-        if opt == '-l':
-            logging_config = util.abspath(optarg)
-
-    if not args:
-        usage()
-
-    config.read(util.abspath(args[0]))
-    load_modules()
-
-    if logging_config:
-        logging.config.fileConfig(logging_config)
+    if args.logging_config:
+        logging.config.fileConfig(args.logging_config)
 
     if config.getboolean('web', 'daemon'):
         util.daemonize()
@@ -66,7 +52,7 @@ def main():
         instance.register(i, textgen.TextGenerator.getinstance(i))
 
     try:
-        run_app(__name__)
+        runapp(__name__)
     finally:
         instance.unregister()
 

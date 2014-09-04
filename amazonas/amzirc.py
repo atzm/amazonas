@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import re
-import os
-import sys
 import signal
-import getopt
 import logging
 import logging.config
+import argparse
 import contextlib
 
 import irc.bot
@@ -16,7 +14,6 @@ import irc.client
 from . import util
 from . import config
 from . import ircplugin
-from . import irchandler
 
 
 class IRCBot(irc.bot.SingleServerIRCBot):
@@ -215,57 +212,43 @@ def encoding(encode):
 
 
 def main():
-    def usage():
-        raise SystemExit('syntax: %s [-l <logging_config>] <config>' %
-                         os.path.basename(sys.argv[0]))
+    def setlogger(conf_file=None):
+        if conf_file:
+            return logging.config.fileConfig(conf_file)
 
-    def log_modules():
+        logging.basicConfig(level=logging.INFO,
+                            format='%(asctime)s %(levelname)s %(message)s',
+                            datefmt='%Y/%m/%d %H:%M:%S')
+
+    def loadmodules(path=None):
+        from . import irchandler    # load default modules
+
+        if path:
+            ircplugin.load(path)
+
         for name, actions in ircplugin.iteractions():
             for act in actions:
                 logging.info('[plugin] [action] [%s] <%s.%s> loaded',
                              name, act.__module__, act.__name__)
-
         for name, commands in ircplugin.itercommands():
             for comm in commands:
                 logging.info('[plugin] [command] [%s] <%s.%s> loaded',
                              name, comm.__module__, comm.__name__)
-
         for name, events in ircplugin.iterevents():
             for evt in events:
                 logging.info('[plugin] [event] [%s] <%s.%s> loaded',
                              name, evt.__module__, evt.__name__)
 
-    logging_config = None
+    ap = argparse.ArgumentParser()
+    ap.add_argument('-l', '--logging-config', type=util.abspath,
+                    help='configuration file for the logging')
+    ap.add_argument('config', type=util.abspath,
+                    help='configuration file for the IRC client')
+    args = ap.parse_args()
 
-    try:
-        opts, args = getopt.gnu_getopt(sys.argv[1:], 'l:')
-    except getopt.error:
-        usage()
-
-    for opt, optarg in opts:
-        if opt == '-l':
-            logging_config = util.abspath(optarg)
-
-    if not args:
-        usage()
-
-    config.read(util.abspath(args[0]))
-
-    plugin_path = config.get('plugin', 'path')
-    if plugin_path:
-        ircplugin.load(plugin_path)
-
-    if logging_config:
-        logging.config.fileConfig(logging_config)
-    else:
-        logging.basicConfig(level=logging.INFO,
-                            format='%(asctime)s %(levelname)s %(message)s',
-                            datefmt='%Y/%m/%d %H:%M:%S')
-
-    log_modules()
-
-    if config.getboolean('irc', 'daemon'):
-        util.daemonize()
+    config.read(args.config)
+    setlogger(args.logging_config)
+    loadmodules(config.get('plugin', 'path'))
 
     with encoding(config.get('irc', 'encode')):
         bot = IRCBot()
@@ -276,6 +259,9 @@ def main():
 
         for sig in (signal.SIGINT, signal.SIGTERM):
             signal.signal(sig, q)
+
+        if config.getboolean('irc', 'daemon'):
+            util.daemonize()
 
         with exceptlog('main', bot.start) as run:
             run()
