@@ -10,13 +10,13 @@ from . import config
 
 
 def getdb(type_, instance):
-    d = config.as_dict('db:%s:%s' % (type_, instance))
+    d = config.as_dict(':'.join(('db', type_, instance)))
     c = db.getclass(type_, d.pop('type'))
     return c(**d)
 
 
 def getparser(type_, instance):
-    d = config.as_dict('parser:%s:%s' % (type_, instance))
+    d = config.as_dict(':'.join(('parser', type_, instance)))
     c = parser.getclass(type_, d.pop('type'))
     return c(**d)
 

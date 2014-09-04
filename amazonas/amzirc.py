@@ -150,7 +150,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
                 logging.error('[schedule] [%s] no action specified', sect)
                 continue
 
-            action = 'action:%s' % config.get(sect, 'action')
+            action = ':'.join(('action', config.get(sect, 'action')))
             if not config.has_section(action):
                 logging.error('[schedule] [%s] invalid action specified', sect)
                 continue
