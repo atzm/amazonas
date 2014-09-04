@@ -41,6 +41,9 @@ class Dict(db.Database):
     def keys(self):
         return [self.deserialize(k) for k in self.table.keys()]
 
+    def length(self):
+        return len(self.table)
+
     def load(self):
         self.table = {}
 

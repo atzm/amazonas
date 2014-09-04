@@ -87,5 +87,5 @@ def histories(inst):
 def stats(inst):
     inst = getinstance(inst)
     return flask.jsonify(threshold=inst.score_threshold,
-                         keys=len(inst.markov.db.keys()),
-                         entrypoints=len(inst.markov.edb.keys()))
+                         keys=len(inst.markov.db),
+                         entrypoints=len(inst.markov.edb))

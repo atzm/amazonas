@@ -35,3 +35,6 @@ class Redis(db.Database):
 
     def keys(self):
         return [self.deserialize(k) for k in self.redis.keys()]
+
+    def length(self):
+        return self.redis.dbsize()

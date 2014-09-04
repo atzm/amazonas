@@ -46,7 +46,7 @@ class Database(object):
         pass
 
     def get(self, key):
-        pass
+        return []
 
     def getrand(self, key):
         pass
@@ -55,7 +55,13 @@ class Database(object):
         pass
 
     def keys(self):
-        pass
+        return []
+
+    def length(self):
+        return 0
+
+    def __len__(self):
+        return self.length()
 
     @staticmethod
     def serialize(data):
