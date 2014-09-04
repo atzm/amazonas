@@ -80,10 +80,10 @@ time        = 06:00-20:00
 
 [action:mynull]
 enable      = true
-pattern     = あとひといきじゃ
+pattern     = こんにちは
 action      = null
 fallthrough = false
-message     = パワーをメテオに
+message     = こんにちは %(msgfrom)s さん
 
 [schedule:myschedule]
 enable   = true

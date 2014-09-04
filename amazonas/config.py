@@ -2,12 +2,12 @@
 
 import fcntl
 import inspect
-from ConfigParser import SafeConfigParser, NoSectionError, NoOptionError
+from ConfigParser import RawConfigParser, NoSectionError, NoOptionError
 
 from . import util
 
 
-class Config(SafeConfigParser):
+class Config(RawConfigParser):
     ENCODE = 'utf-8'
 
     def reload(self):
@@ -19,7 +19,7 @@ class Config(SafeConfigParser):
 
         with open(path) as fp:
             fcntl.flock(fp.fileno(), fcntl.LOCK_SH)
-            SafeConfigParser.readfp(self, fp, path)
+            RawConfigParser.readfp(self, fp, path)
 
         setattr(self, 'lastreadpath', path)
 
@@ -28,7 +28,7 @@ class Config(SafeConfigParser):
             fcntl.flock(fp.fileno(), fcntl.LOCK_EX)
             fp.truncate(0)
             fp.seek(0, 0)
-            SafeConfigParser.write(self, fp)
+            RawConfigParser.write(self, fp)
 
     def set(self, sect, key, val):
         if type(val) is unicode:
@@ -36,14 +36,14 @@ class Config(SafeConfigParser):
         else:
             val = str(val)
         try:
-            SafeConfigParser.set(self, sect, key, val)
+            RawConfigParser.set(self, sect, key, val)
         except NoSectionError:
-            SafeConfigParser.add_section(self, sect)
-            SafeConfigParser.set(self, sect, key, val)
+            RawConfigParser.add_section(self, sect)
+            RawConfigParser.set(self, sect, key, val)
 
     def get(self, sect, key, type_=''):
         try:
-            val = getattr(SafeConfigParser, 'get%s' % type_)(self, sect, key)
+            val = getattr(RawConfigParser, 'get%s' % type_)(self, sect, key)
             if type(val) is str:
                 return unicode(val, self.ENCODE)
             return val
@@ -71,7 +71,7 @@ class Config(SafeConfigParser):
 
     def as_dict(self, sect):
         try:
-            keys = SafeConfigParser.options(self, sect)
+            keys = RawConfigParser.options(self, sect)
         except NoSectionError:
             return {}
         return dict([(k, self.get(sect, k)) for k in keys])

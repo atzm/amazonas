@@ -52,10 +52,11 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         self.handle_message(conn, event, event.source.nick,
                             event.target, event.arguments[0])
 
-    def send_message(self, conn, replyto, sect):
+    def send_message(self, conn, replyto, sect, msgdata={}):
         message = config.get(sect, 'message')
         if message:
-            conn.notice(replyto, message)
+            with exceptlog(sect, conn.notice, message) as run:
+                run(replyto, message % msgdata)
 
     def handle_message(self, conn, event, msgfrom, replyto, msg):
         if msg.startswith('!'):
@@ -75,11 +76,14 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         if not config.enabled(sect):
             return
 
+        msgdata = {'msgfrom': msgfrom}
         for handler in ircplugin.getcommand(words[0]):
             with exceptlog(sect, handler, msg) as run:
-                run(self, conn, event, msgfrom, replyto, *words[1:])
+                r = run(self, conn, event, msgfrom, replyto, *words[1:])
+                if type(r) is dict:
+                    msgdata.update(r)
 
-        self.send_message(conn, replyto, sect)
+        self.send_message(conn, replyto, sect, msgdata)
 
     def handle_action(self, conn, event, msgfrom, replyto, msg):
         for action in config.getlist('irc', 'actions'):
@@ -112,12 +116,15 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         else:
             match = None
 
+        msgdata = {'msgfrom': msgfrom}
         for handler in ircplugin.getaction(action):
             with exceptlog(sect, handler, msg) as run:
                 conf = config.as_dict(sect)
-                run(self, match, conf, conn, event, msgfrom, replyto, msg)
+                r = run(self, match, conf, conn, event, msgfrom, replyto, msg)
+                if type(r) is dict:
+                    msgdata.update(r)
 
-        self.send_message(conn, replyto, sect)
+        self.send_message(conn, replyto, sect, msgdata)
         return True
 
     def do_match(self, sect, msg):
