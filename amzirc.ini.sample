@@ -83,6 +83,7 @@ time         = 06:00-20:00
 
 [action:mynull]
 enable      = true
+percentage  = 50
 pattern     = こんにちは
 action      = null
 fallthrough = false

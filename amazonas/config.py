@@ -2,6 +2,7 @@
 
 import re
 import fcntl
+import random
 import inspect
 from ConfigParser import RawConfigParser, NoSectionError, NoOptionError
 
@@ -88,6 +89,10 @@ def enabled(sect, nick=None, message=None):
         return False
 
     try:
+        per = _CONF.get(sect, 'percentage')              # allow '0'
+        if per and int(per) < random.randint(1, 100):
+            return False
+
         time_ = _CONF.get(sect, 'time')
         if time_ and not util.time_in(time_):
             return False
