@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import re
 import signal
 import logging
 import logging.config
@@ -70,10 +69,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             return
 
         sect = ':'.join(('command', words[0]))
-        if not config.enabled(sect):
-            return
-
-        if msgfrom and not self.do_match_nick(sect, msgfrom):
+        if not config.enabled(sect, msgfrom):
             return
 
         msgdata = {'msgfrom': msgfrom}
@@ -97,7 +93,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             return True
         if sched and not config.enabled(sched):
             return False
-        if not config.enabled(sect):
+        if not config.enabled(sect, msgfrom, msg):
             return False
 
         action = config.get(sect, 'action')
@@ -105,44 +101,16 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             logging.error('[action] [%s] no action specified', sect)
             return False
 
-        if msgfrom and not self.do_match_nick(sect, msgfrom):
-            return False
-
-        if msg:
-            try:
-                match = self.do_match(sect, msg)
-            except Exception as e:
-                logging.error('[action] [%s] %s', sect, str(e))
-                return False
-            if not match:
-                return False
-        else:
-            match = None
-
         msgdata = {'msgfrom': msgfrom}
         for handler in ircplugin.getaction(action):
             with exceptlog(sect, handler, msg) as run:
                 conf = config.as_dict(sect)
-                r = run(self, match, conf, conn, event, msgfrom, replyto, msg)
+                r = run(self, conf, conn, event, msgfrom, replyto, msg)
                 if type(r) is dict:
                     msgdata.update(r)
 
         self.send_message(conn, replyto, sect, msgdata)
         return True
-
-    def do_match(self, sect, msg):
-        pattern = config.get(sect, 'pattern')
-        if not pattern:
-            raise ValueError('no pattern specified')
-
-        return re.search(pattern, msg)
-
-    def do_match_nick(self, sect, nick):
-        try:
-            return bool(re.search(config.get(sect, 'nick_pattern'), nick))
-        except Exception as e:
-            logging.error('[%s] %s', sect, str(e))
-        return False
 
     def schedule(self):
         channel = config.get('irc', 'channel')

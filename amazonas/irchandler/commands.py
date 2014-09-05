@@ -15,9 +15,10 @@ def help(ircbot, conn, event, msgfrom, replyto, *args):
     '''
     cmdlist = []
     for name, cmds in ircplugin.itercommands():
+        sect = ':'.join(('command', name))
         if args and args[0] != name:
             continue
-        if not config.enabled(':'.join(('command', name))):
+        if not config.enabled(sect, msgfrom):
             continue
         for cmd in cmds:
             cmdlist.append((name, cmd))

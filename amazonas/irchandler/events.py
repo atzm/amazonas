@@ -6,7 +6,7 @@ from .. import ircplugin
 
 @ircplugin.event('join')
 def oper(conn, event):
-    if not config.enabled('event:join:oper'):
+    if not config.enabled('event:join:oper', event.source.nick):
         return
     if event.source.nick == conn.get_nickname():
         return

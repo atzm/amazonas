@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import re
 import fcntl
 import inspect
 from ConfigParser import RawConfigParser, NoSectionError, NoOptionError
@@ -77,7 +78,7 @@ class Config(RawConfigParser):
         return dict([(k, self.get(sect, k)) for k in keys])
 
 
-def enabled(sect):
+def enabled(sect, nick=None, message=None):
     global _CONF
 
     if not _CONF.has_section(sect):
@@ -92,6 +93,20 @@ def enabled(sect):
             return False
     except:
         return False
+
+    if nick is not None:
+        try:
+            if not re.search(_CONF.get(sect, 'nick_pattern'), nick):
+                return False
+        except:
+            return False
+
+    if message is not None:
+        try:
+            if not re.search(_CONF.get(sect, 'pattern'), message):
+                return False
+        except:
+            return False
 
     return True
 

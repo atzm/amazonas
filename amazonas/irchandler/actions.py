@@ -8,18 +8,18 @@ from .. import ircplugin
 
 
 @ircplugin.action('null')
-def null(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
+def null(ircbot, conf, conn, event, msgfrom, replyto, msg):
     pass
 
 
 @ircplugin.action('log')
-def log(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
+def log(ircbot, conf, conn, event, msgfrom, replyto, msg):
     func = getattr(logging, conf.get('level', 'info'), logging.info)
     func('[log]  [%s] %s> %s', replyto, msgfrom, msg)
 
 
 @ircplugin.action('oper')
-def oper(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
+def oper(ircbot, conf, conn, event, msgfrom, replyto, msg):
     if not replyto or not msgfrom:
         logging.error('[oper] cannot exec with "replyto:%s", "msgfrom:%s"',
                       replyto, msgfrom)
@@ -28,7 +28,7 @@ def oper(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
 
 
 @ircplugin.action('disoper')
-def disoper(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
+def disoper(ircbot, conf, conn, event, msgfrom, replyto, msg):
     if not replyto or not msgfrom:
         logging.error('[disoper] cannot exec with "replyto:%s", "msgfrom:%s"',
                       replyto, msgfrom)
@@ -37,7 +37,7 @@ def disoper(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
 
 
 @ircplugin.action('learn')
-def learn(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
+def learn(ircbot, conf, conn, event, msgfrom, replyto, msg):
     if not msg:
         logging.error('[learn] cannot exec without any messages')
         return
@@ -64,7 +64,7 @@ def learn(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
 
 
 @ircplugin.action('talk')
-def talk(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
+def talk(ircbot, conf, conn, event, msgfrom, replyto, msg):
     client = util.HTTPClient(conf['server'], conf['port'])
     path = '/'.join(('/v0.1', conf['instance']))
     nr_retry = int(conf.get('nr_retry', 0))
