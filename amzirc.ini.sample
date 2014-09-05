@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 [irc]
-daemon       = true
+daemon       = false
 server       = 127.0.0.1
 port         = 6667
 nick         = amazonas
