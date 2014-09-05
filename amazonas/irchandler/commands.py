@@ -68,15 +68,27 @@ def suggest(ircbot, conn, event, msgfrom, replyto, *args):
     '''
     locale = config.get('command:suggest', 'locale') or 'en'
     limit = config.getint('command:suggest', 'limit') or 1
+    nr_retry = config.getint('command:suggest', 'nr_retry')
     randomize = config.getboolean('command:suggest', 'randomize')
     notfound = config.get('command:suggest', 'notfound') or 'not found'
 
     client = util.HTTPClient('www.google.com', 443, True)
-    code, body = client.get('/complete/search', hl=locale,
-                            client='firefox', q=' '.join(args))
 
-    if code != 200:
+    if limit < 1:
+        logging.warn('[suggest] detected limit < 1')
+        limit = 1
+    if nr_retry < 0:
+        logging.warn('[suggest] detected nr_retry < 0')
+        nr_retry = 0
+
+    for x in xrange(1, nr_retry + 2):
+        code, body = client.get('/complete/search', hl=locale,
+                                client='firefox', q=' '.join(args))
+        if code == 200:
+            break
+    else:
         return conn.notice(replyto, notfound)
+
     if type(body) is not list:
         return conn.notice(replyto, notfound)
     if len(body) < 2:

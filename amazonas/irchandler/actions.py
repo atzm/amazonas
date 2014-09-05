@@ -48,21 +48,38 @@ def learn(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
 
     client = util.HTTPClient(conf['server'], conf['port'])
     path = '/'.join(('/v0.1', conf['instance']))
+    nr_retry = int(conf.get('nr_retry', 0))
 
-    code, _ = client.put(path, {'text': [msg]})
-    if code != 204:
-        logging.warn('[learn] failed with %d / "%s"', code, msg)
+    if nr_retry < 0:
+        logging.warn('[learn] detected nr_retry < 0')
+        nr_retry = 0
+
+    for x in xrange(1, nr_retry + 2):
+        code, _ = client.put(path, {'text': [msg]})
+
+        if code == 204:
+            return
+
+        logging.warn('[learn] [#%d] failed with %d / "%s"', x, code, msg)
 
 
 @ircplugin.action('talk')
 def talk(ircbot, match, conf, conn, event, msgfrom, replyto, msg):
     client = util.HTTPClient(conf['server'], conf['port'])
     path = '/'.join(('/v0.1', conf['instance']))
+    nr_retry = int(conf.get('nr_retry', 0))
 
-    code, body = client.get(path)
-    if code == 200:
-        conn.notice(replyto, body['text'])
-        logging.info('[talk] [%s] %s> %s',
-                     replyto, conn.get_nickname(), body['text'])
-    else:
-        logging.warn('[talk] failed with %d', code)
+    if nr_retry < 0:
+        logging.warn('[talk] detected nr_retry < 0')
+        nr_retry = 0
+
+    for x in xrange(1, nr_retry + 2):
+        code, body = client.get(path)
+
+        if code == 200:
+            conn.notice(replyto, body['text'])
+            logging.info('[talk] [%s] %s> %s',
+                         replyto, conn.get_nickname(), body['text'])
+            return
+
+        logging.warn('[talk] [#%d] failed with %d', x, code)

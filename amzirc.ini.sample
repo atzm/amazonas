@@ -41,6 +41,7 @@ message = 寝ます
 enable    = true
 locale    = ja
 limit     = 3
+nr_retry  = 2
 randomize = true
 notfound  = 見つかりませんでした
 
@@ -58,6 +59,7 @@ action       = learn
 fallthrough  = true
 server       = 127.0.0.1
 port         = 8349
+nr_retry     = 2
 instance     = first
 replace_nick = amazonas
 
@@ -68,6 +70,7 @@ action      = talk
 fallthrough = false
 server      = 127.0.0.1
 port        = 8349
+nr_retry    = 2
 instance    = first
 
 [action:myoper]
