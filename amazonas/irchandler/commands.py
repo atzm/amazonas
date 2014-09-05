@@ -18,7 +18,7 @@ def help(ircbot, conn, event, msgfrom, replyto, *args):
         sect = ':'.join(('command', name))
         if args and args[0] != name:
             continue
-        if not config.enabled(sect, msgfrom):
+        if not ircbot.isenabled(sect, msgfrom):
             continue
         for cmd in cmds:
             cmdlist.append((name, cmd))

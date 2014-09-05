@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import re
 import fcntl
-import random
 import inspect
 from ConfigParser import RawConfigParser, NoSectionError, NoOptionError
 
@@ -77,43 +75,6 @@ class Config(RawConfigParser):
         except NoSectionError:
             return {}
         return dict([(k, self.get(sect, k)) for k in keys])
-
-
-def enabled(sect, nick=None, message=None):
-    global _CONF
-
-    if not _CONF.has_section(sect):
-        return False
-
-    if not _CONF.getboolean(sect, 'enable'):
-        return False
-
-    try:
-        per = _CONF.get(sect, 'percentage')              # allow '0'
-        if per and int(per) < random.randint(1, 100):
-            return False
-
-        time_ = _CONF.get(sect, 'time')
-        if time_ and not util.time_in(time_):
-            return False
-    except:
-        return False
-
-    if nick is not None:
-        try:
-            if not re.search(_CONF.get(sect, 'nick_pattern'), nick):
-                return False
-        except:
-            return False
-
-    if message is not None:
-        try:
-            if not re.search(_CONF.get(sect, 'pattern'), message):
-                return False
-        except:
-            return False
-
-    return True
 
 
 _CONF = Config()

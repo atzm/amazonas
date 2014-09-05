@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import re
+import random
 import signal
 import logging
 import logging.config
@@ -29,7 +31,12 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 
         super(IRCBot, self).__init__([spec], nick, nick)
         self.action_active = True
-        self.register_events()
+        self.connection.add_global_handler('all_events', self.dispatch_event)
+
+    def dispatch_event(self, conn, event):
+        for handler in ircplugin.getevent(event.type):
+            with exceptlog(':'.join(('event', event.type)), handler) as run:
+                run(self, conn, event)
 
     def on_welcome(self, conn, event):
         channel = config.get('irc', 'channel')
@@ -69,7 +76,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             return
 
         sect = ':'.join(('command', words[0]))
-        if not config.enabled(sect, msgfrom):
+        if not self.isenabled(sect, msgfrom):
             return
 
         msgdata = {'msgfrom': msgfrom}
@@ -91,9 +98,9 @@ class IRCBot(irc.bot.SingleServerIRCBot):
     def do_action(self, sect, conn, event, msgfrom, replyto, msg, sched=None):
         if not self.action_active:
             return True
-        if sched and not config.enabled(sched):
+        if sched and not self.isenabled(sched):
             return False
-        if not config.enabled(sect, msgfrom, msg):
+        if not self.isenabled(sect, msgfrom, msg):
             return False
 
         action = config.get(sect, 'action')
@@ -118,7 +125,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         for schedule in config.getlist('irc', 'schedules'):
             sect = ':'.join(('schedule', schedule))
 
-            # do not evaluate config.enabled() here.
+            # do not evaluate isenabled() here.
             # if it does, the disabled action will never be scheduled.
             if not config.has_section(sect):
                 logging.error('[schedule] [%s] no such schedule', sect)
@@ -143,10 +150,40 @@ class IRCBot(irc.bot.SingleServerIRCBot):
                                            None, channel, None, sect))
             logging.info('[schedule] [%s] registered', sect)
 
-    def register_events(self):
-        for name, handlers in ircplugin.iterevents():
-            for handler in handlers:
-                self.connection.add_global_handler(name, handler)
+    @staticmethod
+    def isenabled(sect, nick=None, message=None):
+        if not config.has_section(sect):
+            return False
+
+        if not config.getboolean(sect, 'enable'):
+            return False
+
+        try:
+            per = config.get(sect, 'percentage')             # allow '0'
+            if per and int(per) < random.randint(1, 100):
+                return False
+
+            time_ = config.get(sect, 'time')
+            if time_ and not util.time_in(time_):
+                return False
+        except:
+            return False
+
+        if nick is not None:
+            try:
+                if not re.search(config.get(sect, 'nick_pattern'), nick):
+                    return False
+            except:
+                return False
+
+        if message is not None:
+            try:
+                if not re.search(config.get(sect, 'pattern'), message):
+                    return False
+            except:
+                return False
+
+        return True
 
 
 @contextlib.contextmanager
