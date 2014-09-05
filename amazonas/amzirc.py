@@ -167,6 +167,8 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             if time_ and not util.time_in(time_):
                 return False
         except:
+            logging.exception('[%s] nick="%s" message="%s"',
+                              sect, nick, message)
             return False
 
         if nick is not None:
@@ -174,6 +176,8 @@ class IRCBot(irc.bot.SingleServerIRCBot):
                 if not re.search(config.get(sect, 'nick_pattern'), nick):
                     return False
             except:
+                logging.exception('[%s] nick="%s" message="%s"',
+                                  sect, nick, message)
                 return False
 
         if message is not None:
@@ -181,6 +185,8 @@ class IRCBot(irc.bot.SingleServerIRCBot):
                 if not re.search(config.get(sect, 'pattern'), message):
                     return False
             except:
+                logging.exception('[%s] nick="%s" message="%s"',
+                                  sect, nick, message)
                 return False
 
         return True
