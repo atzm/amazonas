@@ -73,6 +73,9 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         if not config.enabled(sect):
             return
 
+        if msgfrom and not self.do_match_nick(sect, msgfrom):
+            return
+
         msgdata = {'msgfrom': msgfrom}
         for handler in ircplugin.getcommand(words[0]):
             with exceptlog(sect, handler, msg) as run:
@@ -100,6 +103,9 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         action = config.get(sect, 'action')
         if not action:
             logging.error('[action] [%s] no action specified', sect)
+            return False
+
+        if msgfrom and not self.do_match_nick(sect, msgfrom):
             return False
 
         if msg:
@@ -130,6 +136,13 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             raise ValueError('no pattern specified')
 
         return re.search(pattern, msg)
+
+    def do_match_nick(self, sect, nick):
+        try:
+            return bool(re.search(config.get(sect, 'nick_pattern'), nick))
+        except Exception as e:
+            logging.error('[%s] %s', sect, str(e))
+        return False
 
     def schedule(self):
         channel = config.get('irc', 'channel')
