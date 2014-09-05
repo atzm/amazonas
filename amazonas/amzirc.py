@@ -58,8 +58,12 @@ class IRCBot(irc.bot.SingleServerIRCBot):
     def send_message(self, conn, replyto, sect, msgdata={}):
         message = config.get(sect, 'message')
         if message:
-            with exceptlog(sect, conn.notice, message) as run:
-                run(replyto, message % msgdata)
+            try:
+                message = message % msgdata
+            except KeyError as e:
+                logging.warn('[%s] skipped messaging, no data %s', sect, e)
+                return
+            conn.notice(replyto, message)
 
     def handle_message(self, conn, event, msgfrom, replyto, msg):
         if msg.startswith('!'):

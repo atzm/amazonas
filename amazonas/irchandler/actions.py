@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import re
+import random
 import logging
 
 from .. import util
@@ -83,3 +84,32 @@ def talk(ircbot, conf, conn, event, msgfrom, replyto, msg):
             return
 
         logging.warn('[talk] [#%d] failed with %d', x, code)
+
+
+@ircplugin.action('suggest')
+def suggest(ircbot, conf, conn, event, msgfrom, replyto, msg):
+    locale = conf.get('locale', 'en')
+    nr_retry = int(conf.get('nr_retry', 0))
+
+    if nr_retry < 0:
+        logging.warn('[suggest] detected nr_retry < 0')
+        nr_retry = 0
+
+    client = util.HTTPClient(conf['server'], conf['port'])
+    path = '/'.join(('/v0.1', conf['instance'], 'recent-entrypoints'))
+
+    for x in xrange(1, nr_retry + 2):
+        code, body = client.get(path)
+        if code == 200:
+            break
+        logging.warn('[suggest] [#%d] failed with %d', x, code)
+    else:
+        return
+    if not body['keys']:
+        return
+
+    result = util.gcomplete(random.choice(body['keys']), locale, nr_retry)
+    if not result:
+        return
+
+    return {'suggested': random.choice(result)}

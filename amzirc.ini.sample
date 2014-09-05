@@ -8,7 +8,7 @@ nick         = amazonas
 channel      = #amazonas
 encode       = utf-8
 quit_message = さようなら
-actions      = mylog mylearn mytalk myoper mynull
+actions      = mylog mylearn mysuggest mytalk myoper mynull
 schedules    = myschedule
 
 [plugin]
@@ -61,6 +61,18 @@ port         = 8349
 nr_retry     = 2
 instance     = first
 replace_nick = amazonas
+
+[action:mysuggest]
+enable      = true
+percentage  = 8
+action      = suggest
+fallthrough = false
+message     = もしかして: %(suggested)s
+instance    = first
+server      = 127.0.0.1
+port        = 8349
+nr_retry    = 2
+locale      = ja
 
 [action:mytalk]
 enable      = true

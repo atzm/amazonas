@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import os
 import sys
+import time
 import json
 import email
 import shlex
@@ -90,6 +91,31 @@ def formathelp(cmdlist):
         print(file=io)
 
     return io.getvalue().strip()
+
+
+def gcomplete(query, locale='en', nr_retry=0, retry_interval=0.2):
+    client = HTTPClient('www.google.com', 443, True)
+
+    for x in xrange(nr_retry + 1):
+        code, body = client.get('/complete/search', hl=locale,
+                                client='firefox', q=query)
+        if code == 200:
+            break
+
+        time.sleep(retry_interval)
+    else:
+        return []
+
+    if type(body) is not list:
+        return []
+
+    if len(body) < 2:
+        return []
+
+    if type(body[1]) is not list:
+        return []
+
+    return body[1]
 
 
 class HTTPClient(object):

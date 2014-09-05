@@ -15,10 +15,9 @@ def help(ircbot, conn, event, msgfrom, replyto, *args):
     '''
     cmdlist = []
     for name, cmds in ircplugin.itercommands():
-        sect = ':'.join(('command', name))
         if args and args[0] != name:
             continue
-        if not ircbot.isenabled(sect, msgfrom):
+        if not ircbot.isenabled(':'.join(('command', name)), msgfrom):
             continue
         for cmd in cmds:
             cmdlist.append((name, cmd))
@@ -73,8 +72,6 @@ def suggest(ircbot, conn, event, msgfrom, replyto, *args):
     randomize = config.getboolean('command:suggest', 'randomize')
     notfound = config.get('command:suggest', 'notfound') or 'not found'
 
-    client = util.HTTPClient('www.google.com', 443, True)
-
     if limit < 1:
         logging.warn('[suggest] detected limit < 1')
         limit = 1
@@ -82,25 +79,12 @@ def suggest(ircbot, conn, event, msgfrom, replyto, *args):
         logging.warn('[suggest] detected nr_retry < 0')
         nr_retry = 0
 
-    for x in xrange(1, nr_retry + 2):
-        code, body = client.get('/complete/search', hl=locale,
-                                client='firefox', q=' '.join(args))
-        if code == 200:
-            break
-    else:
-        return conn.notice(replyto, notfound)
-
-    if type(body) is not list:
-        return conn.notice(replyto, notfound)
-    if len(body) < 2:
-        return conn.notice(replyto, notfound)
-    if type(body[1]) is not list:
-        return conn.notice(replyto, notfound)
-    if not body[1]:
+    result = util.gcomplete(' '.join(args), locale, nr_retry)
+    if not result:
         return conn.notice(replyto, notfound)
 
     if randomize:
-        random.shuffle(body[1])
+        random.shuffle(result)
 
-    for text in body[1][:limit]:
+    for text in result[:limit]:
         conn.notice(replyto, text)
