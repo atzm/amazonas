@@ -156,7 +156,7 @@ class ConsoleCommand(Command):
         '''
         code, body = self.client.get(self.path('/entrypoints'))
         if code == 200:
-            for k in body.get('entrypoints', []):
+            for k in body.get('keys', []):
                 json.dump(k, self.FILE, ensure_ascii=False)
                 self.print()
         else:
@@ -166,9 +166,9 @@ class ConsoleCommand(Command):
         '''(no arguments required)
         Display recent learned candidate entrypoints.
         '''
-        code, body = self.client.get(self.path('/entrypoints/recents'))
+        code, body = self.client.get(self.path('/recent-entrypoints'))
         if code == 200:
-            for k in body.get('entrypoints', []):
+            for k in body.get('keys', []):
                 json.dump(k, self.FILE, ensure_ascii=False)
                 self.print()
         else:

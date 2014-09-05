@@ -44,12 +44,9 @@ def keys(inst):
     return flask.jsonify(keys=inst.markov.db.keys())
 
 
-@mod.route('/<inst>/keys/<path:keys>', methods=['GET', 'DELETE'])
-def maps(inst, keys):
+@mod.route('/<inst>/keys/<path:keys>')
+def values(inst, keys):
     inst = getinstance(inst)
-
-    if flask.request.method == 'DELETE':
-        flask.abort(501)  # not implemented
 
     try:
         keys = json.loads(keys)
@@ -68,13 +65,13 @@ def maps(inst, keys):
 @mod.route('/<inst>/entrypoints')
 def entrypoints(inst):
     inst = getinstance(inst)
-    return flask.jsonify(entrypoints=inst.markov.edb.keys())
+    return flask.jsonify(keys=inst.markov.edb.keys())
 
 
-@mod.route('/<inst>/entrypoints/recents')
+@mod.route('/<inst>/recent-entrypoints')
 def recent_entrypoints(inst):
     inst = getinstance(inst)
-    return flask.jsonify(entrypoints=list(inst.entrypoint))
+    return flask.jsonify(keys=list(inst.entrypoint))
 
 
 @mod.route('/<inst>/histories')
