@@ -62,11 +62,11 @@ def learn(ircbot, conf, conn, event, msgfrom, replyto, msg):
         code, _ = client.put(path, {'text': [msg]})
 
         if code == 204:
-            return None
+            return {}
 
         logging.warn('[learn] [#%d] failed with %d / "%s"', x, code, msg)
 
-    return {}
+    return None
 
 
 @ircplugin.action('talk')
@@ -86,11 +86,11 @@ def talk(ircbot, conf, conn, event, msgfrom, replyto, msg):
             conn.notice(replyto, body['text'])
             logging.info('[talk] [%s] %s> %s',
                          replyto, conn.get_nickname(), body['text'])
-            return None
+            return {}
 
         logging.warn('[talk] [#%d] failed with %d', x, code)
 
-    return {}
+    return None
 
 
 @ircplugin.action('suggest')
