@@ -14,16 +14,17 @@ def help(ircbot, conn, event, msgfrom, replyto, *args):
     Display help message.
     '''
     cmdlist = []
-    for name, cmds in ircplugin.itercommands():
+    for name, command in ircplugin.itercommands():
         if args and args[0] != name:
             continue
         if not ircbot.isenabled(':'.join(('command', name)), msgfrom):
             continue
-        for cmd in cmds:
-            cmdlist.append((name, cmd))
+        cmdlist.append((name, command))
 
     for line in util.formathelp(cmdlist).splitlines():
         conn.notice(replyto, line.rstrip())
+
+    return {}
 
 
 @ircplugin.command('version')
@@ -32,6 +33,7 @@ def version(ircbot, conn, event, msgfrom, replyto, *args):
     Display version information.
     '''
     conn.notice(replyto, 'amazonas/0.0.1')
+    return {}
 
 
 @ircplugin.command('reload')
@@ -41,6 +43,7 @@ def reload(ircbot, conn, event, msgfrom, replyto, *args):
     '''
     config.reload()
     logging.info('[reload] config reloaded')
+    return {}
 
 
 @ircplugin.command('activate')
@@ -50,6 +53,7 @@ def activate(ircbot, conn, event, msgfrom, replyto, *args):
     '''
     ircbot.action_active = True
     logging.info('[activate] activated')
+    return {}
 
 
 @ircplugin.command('deactivate')
@@ -59,6 +63,7 @@ def deactivate(ircbot, conn, event, msgfrom, replyto, *args):
     '''
     ircbot.action_active = False
     logging.info('[deactivate] deactivated')
+    return {}
 
 
 @ircplugin.command('suggest')
@@ -81,10 +86,13 @@ def suggest(ircbot, conn, event, msgfrom, replyto, *args):
 
     result = util.gcomplete(' '.join(args), locale, nr_retry)
     if not result:
-        return conn.notice(replyto, notfound)
+        conn.notice(replyto, notfound)
+        return None
 
     if randomize:
         random.shuffle(result)
 
     for text in result[:limit]:
         conn.notice(replyto, text)
+
+    return {}

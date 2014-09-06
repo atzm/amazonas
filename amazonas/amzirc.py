@@ -58,12 +58,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
     def send_message(self, conn, replyto, sect, msgdata={}):
         message = config.get(sect, 'message')
         if message:
-            try:
-                message = message % msgdata
-            except KeyError as e:
-                logging.warn('[%s] skipped messaging, no data %s', sect, e)
-                return
-            conn.notice(replyto, message)
+            conn.notice(replyto, message % msgdata)
 
     def handle_message(self, conn, event, msgfrom, replyto, msg):
         if msg.startswith('!'):
@@ -84,13 +79,16 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             return
 
         msgdata = {'msgfrom': msgfrom}
-        for handler in ircplugin.getcommand(words[0]):
-            with exceptlog(sect, handler, msg) as run:
-                r = run(self, conn, event, msgfrom, replyto, *words[1:])
-                if type(r) is dict:
-                    msgdata.update(r)
+        handler = ircplugin.getcommand(words[0])
 
-        self.send_message(conn, replyto, sect, msgdata)
+        with exceptlog(sect, handler, msg) as run:
+            result = run(self, conn, event, msgfrom, replyto, *words[1:])
+
+            if result is None:
+                return
+
+            msgdata.update(result)
+            self.send_message(conn, replyto, sect, msgdata)
 
     def handle_action(self, conn, event, msgfrom, replyto, msg):
         for action in config.getlist('irc', 'actions'):
@@ -113,14 +111,18 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             return False
 
         msgdata = {'msgfrom': msgfrom}
-        for handler in ircplugin.getaction(action):
-            with exceptlog(sect, handler, msg) as run:
-                conf = config.as_dict(sect)
-                r = run(self, conf, conn, event, msgfrom, replyto, msg)
-                if type(r) is dict:
-                    msgdata.update(r)
+        handler = ircplugin.getaction(action)
 
-        self.send_message(conn, replyto, sect, msgdata)
+        with exceptlog(sect, handler, msg) as run:
+            conf = config.as_dict(sect)
+            result = run(self, conf, conn, event, msgfrom, replyto, msg)
+
+            if result is None:
+                return False
+
+            msgdata.update(result)
+            self.send_message(conn, replyto, sect, msgdata)
+
         return True
 
     def schedule(self):
@@ -254,14 +256,12 @@ def main():
         if path:
             ircplugin.load(path)
 
-        for name, actions in ircplugin.iteractions():
-            for act in actions:
-                logging.info('[plugin] [action] [%s] <%s.%s> loaded',
-                             name, act.__module__, act.__name__)
-        for name, commands in ircplugin.itercommands():
-            for comm in commands:
-                logging.info('[plugin] [command] [%s] <%s.%s> loaded',
-                             name, comm.__module__, comm.__name__)
+        for name, action in ircplugin.iteractions():
+            logging.info('[plugin] [action] [%s] <%s.%s> loaded',
+                         name, action.__module__, action.__name__)
+        for name, command in ircplugin.itercommands():
+            logging.info('[plugin] [command] [%s] <%s.%s> loaded',
+                         name, command.__module__, command.__name__)
         for name, events in ircplugin.iterevents():
             for evt in events:
                 logging.info('[plugin] [event] [%s] <%s.%s> loaded',

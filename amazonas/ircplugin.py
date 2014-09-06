@@ -16,15 +16,13 @@ _PLUGINS_EVENT = {}
 
 def action(name):
     def f(func):
-        _PLUGINS_ACTION.setdefault(name, [])
-        _PLUGINS_ACTION[name].append(func)
+        _PLUGINS_ACTION[name] = func
     return f
 
 
 def command(name):
     def f(func):
-        _PLUGINS_COMMAND.setdefault(name, [])
-        _PLUGINS_COMMAND[name].append(func)
+        _PLUGINS_COMMAND[name] = func
     return f
 
 
@@ -40,7 +38,7 @@ def getaction(name):
         return _PLUGINS_ACTION[name]
     except KeyError:
         pass
-    return []
+    return lambda *_: None
 
 
 def iteractions():
@@ -52,7 +50,7 @@ def getcommand(name):
         return _PLUGINS_COMMAND[name]
     except KeyError:
         pass
-    return []
+    return lambda *_: None
 
 
 def itercommands():

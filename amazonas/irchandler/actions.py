@@ -10,13 +10,14 @@ from .. import ircplugin
 
 @ircplugin.action('null')
 def null(ircbot, conf, conn, event, msgfrom, replyto, msg):
-    pass
+    return {}
 
 
 @ircplugin.action('log')
 def log(ircbot, conf, conn, event, msgfrom, replyto, msg):
     func = getattr(logging, conf.get('level', 'info'), logging.info)
     func('[log]  [%s] %s> %s', replyto, msgfrom, msg)
+    return {}
 
 
 @ircplugin.action('oper')
@@ -24,8 +25,9 @@ def oper(ircbot, conf, conn, event, msgfrom, replyto, msg):
     if not replyto or not msgfrom:
         logging.error('[oper] cannot exec with "replyto:%s", "msgfrom:%s"',
                       replyto, msgfrom)
-        return
+        return None
     conn.mode(replyto, '+o %s' % msgfrom)
+    return {}
 
 
 @ircplugin.action('disoper')
@@ -33,15 +35,16 @@ def disoper(ircbot, conf, conn, event, msgfrom, replyto, msg):
     if not replyto or not msgfrom:
         logging.error('[disoper] cannot exec with "replyto:%s", "msgfrom:%s"',
                       replyto, msgfrom)
-        return
+        return None
     conn.mode(replyto, '-o %s' % msgfrom)
+    return {}
 
 
 @ircplugin.action('learn')
 def learn(ircbot, conf, conn, event, msgfrom, replyto, msg):
     if not msg:
         logging.error('[learn] cannot exec without any messages')
-        return
+        return None
 
     replace_nick = conf.get('replace_nick', '')
     if replace_nick and msgfrom:
@@ -59,9 +62,11 @@ def learn(ircbot, conf, conn, event, msgfrom, replyto, msg):
         code, _ = client.put(path, {'text': [msg]})
 
         if code == 204:
-            return
+            return None
 
         logging.warn('[learn] [#%d] failed with %d / "%s"', x, code, msg)
+
+    return {}
 
 
 @ircplugin.action('talk')
@@ -81,9 +86,11 @@ def talk(ircbot, conf, conn, event, msgfrom, replyto, msg):
             conn.notice(replyto, body['text'])
             logging.info('[talk] [%s] %s> %s',
                          replyto, conn.get_nickname(), body['text'])
-            return
+            return None
 
         logging.warn('[talk] [#%d] failed with %d', x, code)
+
+    return {}
 
 
 @ircplugin.action('suggest')
@@ -104,12 +111,12 @@ def suggest(ircbot, conf, conn, event, msgfrom, replyto, msg):
             break
         logging.warn('[suggest] [#%d] failed with %d', x, code)
     else:
-        return
+        return None
     if not body['keys']:
-        return
+        return None
 
     result = util.gcomplete(random.choice(body['keys']), locale, nr_retry)
     if not result:
-        return
+        return None
 
     return {'suggested': random.choice(result)}
