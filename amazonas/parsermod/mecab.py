@@ -59,8 +59,6 @@ class Mecab(parser.Parser):
 
         for text in text.encode(encode).splitlines():
             text = text.strip()
-            if not text:
-                continue
 
             # unicode.strip/split treats wide space as delimiter by default
             for line in tagger.parse(text).splitlines():

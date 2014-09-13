@@ -84,6 +84,8 @@ def talk(ircbot, conf, conn, event, msgfrom, replyto, msg):
 
         if code == 200:
             for line in body['text'].splitlines():
+                if not line:
+                    continue
                 conn.notice(replyto, line)
                 logging.info('[talk] [%s] %s> %s',
                              replyto, conn.get_nickname(), line)

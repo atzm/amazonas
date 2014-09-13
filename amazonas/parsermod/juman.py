@@ -65,11 +65,7 @@ class Juman(parser.Parser):
 
     def parse(self, text):
         for text in text.encode(self.encode).splitlines():
-            text = text.strip()
-            if not text:
-                continue
-
-            text += '\n'
+            text = text.strip() + '\n'
             if len(text) > self.PIPE_BUF:
                 continue
 
