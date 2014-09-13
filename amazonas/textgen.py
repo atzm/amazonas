@@ -101,19 +101,21 @@ class TextGenerator(object):
         return cls(getparser(parser.PARSERTYPE_MORPH, instance), markov,
                    **config.as_dict('textgen:%s' % instance))
 
-    def learn(self, line):
-        info = tuple(self.parser.parse(line))[:-1]
-        if len(info) <= self.markov.level:
+    def learn(self, text):
+        parsed = self.parser.strip(self.parser.parse(text))
+        if len(parsed) <= self.markov.level:
             return
 
-        zipped = zip(*info)
-        wordclass = zip(*zipped[1])[0]
+        self.markov.learn(zip(*parsed)[0])
+        self.entrypoint.extend(self.parser.entrypoints(parsed))
+        self.history.append(text)
 
-        self.markov.learn(zipped[0])
-        self.wordclass.append(wordclass)
-        self.update_score_threshold(self.score(wordclass))
-        self.entrypoint.extend(self.parser.entrypoints(info))
-        self.history.append(line)
+        for line in self.parser.split(parsed):
+            if not line:
+                continue
+            wordclass = zip(*zip(*line)[1])[0]
+            self.update_score_threshold(self.score(wordclass))
+            self.wordclass.append(wordclass)
 
     def run(self):
         for x in xrange(self.nr_retry):
@@ -131,18 +133,28 @@ class TextGenerator(object):
             if self.history_contains(text):
                 continue
 
-            parsed = tuple(self.parser.parse(text))[:-1]
-            if not self.parser.validate(parsed):
+            score = self.textscore(text)
+            if score < 0:
                 continue
 
-            wordclass = [i[0] for _, i in parsed]
-            score = self.score(wordclass)
             self.update_score_threshold(score)
             if self.score_threshold < score:
                 self.history.append(text)
                 return text, score
 
         return None, None
+
+    def textscore(self, text):
+        parsed = self.parser.strip(self.parser.parse(text))
+        if not self.parser.validate(parsed):
+            return -1
+
+        lines = tuple(line for line in self.parser.split(parsed) if line)
+        if not lines:
+            return -1
+
+        score = sum(self.score(zip(*zip(*line)[1])[0]) for line in lines)
+        return score / len(lines)
 
     def score(self, wordclass):
         if len(self.wordclass) <= 1:

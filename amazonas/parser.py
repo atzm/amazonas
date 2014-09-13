@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import string
 import importlib
 import collections
 
@@ -69,3 +70,36 @@ class Parser(object):
 
     def parse(self, text):
         return []
+
+    @staticmethod
+    def split(parsed, chars='\n'):
+        data = []
+        for word, info in parsed:
+            if word in chars:
+                yield data
+                data = []
+                continue
+            data.append((word, info))
+        yield data
+
+    @staticmethod
+    def strip(parsed, chars=string.whitespace):
+        parsed = list(parsed)
+
+        while True:
+            if not parsed:
+                return parsed
+            if parsed[0][0] in chars:
+                parsed.pop(0)
+            else:
+                break
+
+        while True:
+            if not parsed:
+                return parsed
+            if parsed[-1][0] in chars:
+                parsed.pop(-1)
+            else:
+                break
+
+        return parsed
