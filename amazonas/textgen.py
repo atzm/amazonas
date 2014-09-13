@@ -105,8 +105,11 @@ class TextGenerator(object):
             return
 
         zipped = zip(*info)
+        wordclass = zip(*zipped[1])[0]
+
         self.markov.learn(zipped[0])
-        self.wordclass.append(zip(*zipped[1])[0])
+        self.wordclass.append(wordclass)
+        self.update_score_threshold(self.score(wordclass))
         self.entrypoint.extend(self.parser.entrypoints(info))
         self.history.append(line)
 
@@ -132,7 +135,7 @@ class TextGenerator(object):
 
             wordclass = [i[0] for _, i in parsed]
             score = self.score(wordclass)
-            self.score_threshold = (self.score_threshold + score) / 2
+            self.update_score_threshold(score)
             if self.score_threshold < score:
                 self.history.append(text)
                 return text, score
@@ -144,6 +147,9 @@ class TextGenerator(object):
             return 1.0
         dist = [self.distance(wordclass, wcls) for wcls in self.wordclass]
         return 1.0 / (float(sum(dist)) / len(dist))
+
+    def update_score_threshold(self, score):
+        self.score_threshold = (self.score_threshold + score) / 2
 
     def history_contains(self, text):
         for line in self.history:
