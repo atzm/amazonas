@@ -55,6 +55,8 @@ class MarkovTable(object):
         if entrypoint:
             self.edb.append(entrypoint[0], entrypoint)
 
+        self.maxchain = (self.maxchain + len(itemlist)) / 2
+
     def run(self, entrypoint=None):
         if entrypoint:
             items = self.edb.getrand(entrypoint)

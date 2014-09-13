@@ -202,6 +202,7 @@ class ConsoleCommand(Command):
         code, body = self.client.get(self.path('/stats'))
         if code == 200:
             self.print('score threshold: %f' % body['threshold'])
+            self.print('markov maxchain: %d' % body['maxchain'])
             self.print('markov keys:     %d' % body['keys'])
             self.print('entrypoints:     %d' % body['entrypoints'])
         else:
