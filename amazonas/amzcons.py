@@ -92,25 +92,34 @@ class ConsoleCommand(Command):
             self.print('[failed: %d]' % code)
 
     def cmd_learn(self, *args):
-        '''[-c <encoding>] <file>
-        Learn from a file.  The <encoding> is used to decode
-        the text in the <file> (defaults to "utf-8").
+        '''[-r] [-c <encoding>] <file>
+        Learn each line in <file>.  The <encoding> is used to
+        decode the text in the <file> (defaults to "utf-8").
+        If -r is specified, <file> is treated as one text.
         '''
         try:
-            opts, args = getopt.gnu_getopt(args, 'c:')
+            opts, args = getopt.gnu_getopt(args, 'rc:')
         except getopt.error:
             return self.printhelp()
         if not args:
             return self.printhelp()
 
+        raw = False
         encode = 'utf-8'
         for opt, optarg in opts:
-            if opt == '-c':
+            if opt == '-r':
+                raw = True
+            elif opt == '-c':
                 encode = optarg
 
-        with open(util.abspath(args[0])) as fp:
+        with open(util.abspath(args[0]), 'rU') as fp:
             fcntl.flock(fp.fileno(), fcntl.LOCK_SH)
-            text = [unicode(line.strip(), encode) for line in fp]
+            text = unicode(fp.read().strip(), encode)
+
+        if raw:
+            text = [text]
+        else:
+            text = [line.strip() for line in text.splitlines() if line.strip()]
 
         code, _ = self.client.put(self.path(), {'text': text})
         if code == 204:

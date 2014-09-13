@@ -64,36 +64,41 @@ class Juman(parser.Parser):
         return True
 
     def parse(self, text):
-        if not text.endswith('\n'):
-            text += '\n'
-
-        text = text.encode(self.encode)
-        if len(text) > self.PIPE_BUF:
-            return
-
-        p = self.getproc(text)
-        p.stdin.write(text)
-        p.stdin.flush()
-
-        while True:
-            line = unicode(p.stdout.readline().rstrip(), self.encode)
-            if not line or line == 'EOS':
-                break
-
-            idx = 0
-            words = []
-            for x in xrange(3):
-                idx = line[1:].index(' ') + 2
-                words.append(line[:idx - 1])
-                line = line[idx:]
-
-            info = util.split(line)
-
-            if len(info) != 9:        # ex. multiple candidates found
+        for text in text.encode(self.encode).splitlines():
+            text = text.strip()
+            if not text:
                 continue
 
-            yield words[0], [info[0], info[2], info[4], info[6],
-                             None if info[8] == 'NIL' else info[8]]
+            text += '\n'
+            if len(text) > self.PIPE_BUF:
+                continue
+
+            p = self.getproc(text)
+            p.stdin.write(text)
+            p.stdin.flush()
+
+            while True:
+                line = unicode(p.stdout.readline().rstrip(), self.encode)
+                if not line or line == 'EOS':
+                    break
+
+                idx = 0
+                words = []
+                for x in xrange(3):
+                    idx = line[1:].index(' ') + 2
+                    words.append(line[:idx - 1])
+                    line = line[idx:]
+
+                info = util.split(line)
+
+                if len(info) != 9:        # ex. multiple candidates found
+                    continue
+
+                yield words[0], [info[0], info[2], info[4], info[6],
+                                 None if info[8] == 'NIL' else info[8]]
+
+            # pseudo word class for multi-line text generation
+            yield '\n', [u'特殊', u'改行', '*',  '*', None]
 
     def getproc(self, text):
         self.size += len(text)

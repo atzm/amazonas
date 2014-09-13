@@ -57,13 +57,23 @@ class Mecab(parser.Parser):
         tagger = MeCab.Tagger()
         encode = tagger.dictionary_info().charset
 
-        for line in tagger.parse(text.encode(encode)).splitlines():
-            line = unicode(line, encode).strip()
-            if not line or line == 'EOS':
-                break
+        for text in text.encode(encode).splitlines():
+            text = text.strip()
+            if not text:
+                continue
 
-            try:
-                word, info = line.split(None, 1)
-                yield word, info.split(',')
-            except:
-                pass
+            # unicode.strip/split treats wide space as delimiter by default
+            for line in tagger.parse(text).splitlines():
+                line = unicode(line, encode).strip(' \t\r\n')
+
+                if not line or line == 'EOS':
+                    break
+                try:
+                    word, info = line.split('\t', 1)
+                    yield word, info.strip(' \t\r\n').split(',')
+                except:
+                    pass
+
+            # pseudo word class for multi-line text generation
+            yield '\n', [u'記号', u'改行', '*',  '*', '*', '*',
+                         '\n', '\n', '\n']

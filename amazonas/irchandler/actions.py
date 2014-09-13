@@ -83,9 +83,10 @@ def talk(ircbot, conf, conn, event, msgfrom, replyto, msg):
         code, body = client.get(path)
 
         if code == 200:
-            conn.notice(replyto, body['text'])
-            logging.info('[talk] [%s] %s> %s',
-                         replyto, conn.get_nickname(), body['text'])
+            for line in body['text'].splitlines():
+                conn.notice(replyto, line)
+                logging.info('[talk] [%s] %s> %s',
+                             replyto, conn.get_nickname(), line)
             return {}
 
         logging.warn('[talk] [#%d] failed with %d', x, code)

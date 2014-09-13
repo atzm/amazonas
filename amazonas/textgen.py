@@ -100,7 +100,7 @@ class TextGenerator(object):
                    **config.as_dict('textgen:%s' % instance))
 
     def learn(self, line):
-        info = tuple(self.parser.parse(line))
+        info = tuple(self.parser.parse(line))[:-1]
         if len(info) <= self.markov.level:
             return
 
@@ -121,7 +121,7 @@ class TextGenerator(object):
                 entrypoint = None
 
             try:
-                text = ''.join(self.markov.run(entrypoint))
+                text = ''.join(self.markov.run(entrypoint)).strip()
             except:
                 continue
             if not text:
@@ -129,7 +129,7 @@ class TextGenerator(object):
             if self.history_contains(text):
                 continue
 
-            parsed = tuple(self.parser.parse(text))
+            parsed = tuple(self.parser.parse(text))[:-1]
             if not self.parser.validate(parsed):
                 continue
 
