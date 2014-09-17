@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import re
+import time
 import random
 import logging
 
@@ -123,3 +124,47 @@ def suggest(ircbot, conf, conn, event, msgfrom, replyto, msg):
         return None
 
     return {'suggested': random.choice(result)}
+
+
+@ircplugin.action('learn-jlyrics')
+def learn_jlyrics(ircbot, conf, conn, event, msgfrom, replyto, msg):
+    nr_retry = int(conf.get('nr_retry', 0))
+
+    if nr_retry < 0:
+        logging.warn('[learn-jlyrics] detected nr_retry < 0')
+        nr_retry = 0
+
+    client = util.HTTPClient(conf['server'], conf['port'])
+    path = '/'.join(('/v0.1', conf['instance'], 'recent-entrypoints'))
+    for x in xrange(1, nr_retry + 2):
+        code, body = client.get(path)
+        if code == 200:
+            break
+        logging.warn('[learn-jlyrics] [#%d] failed with %d', x, code)
+    else:
+        return None
+    if not body['keys']:
+        return None
+
+    key = random.choice(body['keys'])
+    for title, title_id, artist, artist_id in util.jlyrics.search(lyrics=key):
+        time.sleep(random.randint(1, 3))  # XXX: reduce server load
+        lyrics = util.jlyrics.get(artist_id, title_id)
+        break
+    else:
+        logging.warn('[learn-jlyrics] lyrics not found with "%s"', key)
+        return None
+
+    lines = [line.strip() for line in lyrics.splitlines() if line.strip()]
+    path = '/'.join(('/v0.1', conf['instance']))
+    for x in xrange(1, nr_retry + 2):
+        code, _ = client.put(path, {'text': lines})
+
+        if code == 204:
+            logging.info('[learn-jlyrics] learned with "%s"', key)
+            return {}
+
+        logging.warn('[learn-jlyrics] [#%d] failed with %d / "%s"',
+                     x, code, key)
+
+    return None

@@ -13,6 +13,8 @@ import urllib2
 import datetime
 import cStringIO
 
+from . import jlyrics
+
 
 def abspath(path):
     return os.path.abspath(os.path.expanduser(path))

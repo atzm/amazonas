@@ -8,7 +8,7 @@ nick         = amazonas
 channel      = #amazonas
 encode       = utf-8
 quit_message = さようなら
-actions      = mylog mylearn mysuggest mytalk myoper mynull
+actions      = mylog mylearn myjlyrics mysuggest mytalk myoper mynull
 schedules    = myschedule
 
 [plugin]
@@ -61,6 +61,16 @@ port         = 8349
 nr_retry     = 2
 instance     = first
 replace_nick = amazonas
+
+[action:myjlyrics]
+enable      = true
+percentage  = 1
+action      = learn-jlyrics
+fallthrough = true
+server      = 127.0.0.1
+port        = 8349
+nr_retry    = 2
+instance    = first
 
 [action:mysuggest]
 enable      = true
