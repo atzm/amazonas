@@ -17,7 +17,48 @@ from . import config
 from . import ircplugin
 
 
-class IRCBot(irc.bot.SingleServerIRCBot):
+class DecodingLineBuffer(irc.buffer.DecodingLineBuffer):
+    encoding = 'utf-8'
+    errors = 'replace'
+
+
+class ServerConnection(irc.client.ServerConnection):
+    encoding = 'utf-8'
+    errors = 'replace'
+    buffer_class = DecodingLineBuffer
+
+    def send_raw(self, string):
+        orig_sender = self.socket.send
+
+        def sender(data, *args):
+            data = data.decode('utf-8', self.errors)
+            data = data.encode(self.encoding, self.errors)
+            return orig_sender(data, *args)
+
+        try:
+            self.socket.send = sender
+            return super(ServerConnection, self).send_raw(string)
+        finally:
+            self.socket.send = orig_sender
+
+
+class IRC(irc.client.IRC):
+    def server(self):
+        c = ServerConnection(self)
+        with self.mutex:
+            self.connections.append(c)
+        return c
+
+
+class SimpleIRCClient(irc.client.SimpleIRCClient):
+    manifold_class = IRC
+
+
+class SingleServerIRCBot(SimpleIRCClient, irc.bot.SingleServerIRCBot):
+    pass
+
+
+class IRCBot(SingleServerIRCBot):
     def __init__(self):
         spec = irc.bot.ServerSpec(config.get('irc', 'server'))
         port = config.getint('irc', 'port')
@@ -211,36 +252,6 @@ def exceptlog(name, func, message=None):
         logging.exception(msg)
 
 
-# XXX: python-irc is hardcoded the encoding utf-8 ...
-@contextlib.contextmanager
-def encoding(encode):
-    orig_encode = irc.buffer.DecodingLineBuffer.encoding
-    orig_errors = irc.buffer.DecodingLineBuffer.errors
-    orig_send_raw = irc.client.ServerConnection.send_raw
-
-    def send_raw(self, string, *args):
-        orig_sender = self.socket.send
-
-        def sender(data, *a):
-            return orig_sender(unicode(data, 'utf-8').encode(encode), *a)
-
-        try:
-            self.socket.send = sender
-            return orig_send_raw(self, string, *args)
-        finally:
-            self.socket.send = orig_sender
-
-    try:
-        irc.buffer.DecodingLineBuffer.encoding = encode
-        irc.buffer.DecodingLineBuffer.errors = 'replace'
-        irc.client.ServerConnection.send_raw = send_raw
-        yield
-    finally:
-        irc.buffer.DecodingLineBuffer.encoding = orig_encode
-        irc.buffer.DecodingLineBuffer.errors = orig_errors
-        irc.client.ServerConnection.send_raw = orig_send_raw
-
-
 def main():
     def setlogger(conf_file=None):
         if conf_file:
@@ -278,21 +289,24 @@ def main():
     setlogger(args.logging_config)
     loadmodules(config.get('plugin', 'path'))
 
-    with encoding(config.get('irc', 'encode')):
-        bot = IRCBot()
+    encoding = config.get('irc', 'encode')
+    DecodingLineBuffer.encoding = encoding
+    ServerConnection.encoding = encoding
 
-        def q(*args, **kwargs):
-            bot.die(config.get('irc', 'quit_message'))
-            raise SystemExit()
+    bot = IRCBot()
 
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            signal.signal(sig, q)
+    def q(*args, **kwargs):
+        bot.die(config.get('irc', 'quit_message'))
+        raise SystemExit()
 
-        if config.getboolean('irc', 'daemon'):
-            util.daemonize()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, q)
 
-        with exceptlog('main', bot.start) as run:
-            run()
+    if config.getboolean('irc', 'daemon'):
+        util.daemonize()
+
+    with exceptlog('main', bot.start) as run:
+        run()
 
 
 if __name__ == '__main__':
