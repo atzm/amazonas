@@ -77,14 +77,8 @@ def suggest(ircbot, conn, event, msgfrom, replyto, *args):
     randomize = config.getboolean('command:suggest', 'randomize')
     notfound = config.get('command:suggest', 'notfound') or 'not found'
 
-    if limit < 1:
-        logging.warn('[suggest] detected limit < 1')
-        limit = 1
-    if nr_retry < 0:
-        logging.warn('[suggest] detected nr_retry < 0')
-        nr_retry = 0
-
-    result = util.gcomplete(' '.join(args), locale, nr_retry)
+    gclient = util.http.GoogleClient()
+    result = gclient.complete(' '.join(args), locale, nr_retry)
     if not result:
         conn.notice(replyto, notfound)
         return None

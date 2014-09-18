@@ -7,7 +7,6 @@ import sys
 import json
 import fcntl
 import getopt
-import urllib
 import inspect
 import argparse
 import readline
@@ -71,25 +70,19 @@ class Command(object):
 
 
 class ConsoleCommand(Command):
-    PATH_PREFIX = '/v0.1'
-
     def __init__(self, instance, host, port):
         self.instance = instance
-        self.client = util.HTTPClient(host, port)
-
-    def path(self, path=''):
-        p = '/'.join((self.PATH_PREFIX, self.instance))
-        return ''.join((p, path))
+        self.client = util.http.APIClientV01(host, port)
 
     def cmd_print(self, *args):
         '''(no arguments required)
         Generate a text and display it / its score.
         '''
-        code, body = self.client.get(self.path())
-        if code == 200:
-            self.print('%s [%f]' % (body['text'], body['score']))
+        score, text = self.client.generate(self.instance)
+        if None not in (score, text):
+            self.print('%s [%f]' % (text, score))
         else:
-            self.print('[failed: %d]' % code)
+            self.print('[failed]')
 
     def cmd_learn(self, *args):
         '''[-r] [-c <encoding>] <file>
@@ -121,13 +114,25 @@ class ConsoleCommand(Command):
         else:
             text = [line.strip() for line in text.splitlines() if line.strip()]
 
-        code, _ = self.client.put(self.path(), {'text': text})
-        if code == 204:
+        if self.client.learn(self.instance, text):
             self.print('[success]')
         else:
-            self.print('[failed: %d]' % code)
+            self.print('[failed]')
 
-    def cmd_map(self, *args):
+    def cmd_key(self, *args):
+        '''(no arguments required)
+        Display keys of the Markov Table.
+        '''
+        keys = self.client.keys(self.instance)
+        if keys is None:
+            return self.print('[failed]')
+        for k in keys:
+            for i in k:
+                json.dump(i, self.FILE, ensure_ascii=False)
+                self.print(' ', end='')
+            self.print()
+
+    def cmd_value(self, *args):
         '''<key1> [<key2> [...]]
         Get values of the Markov Table on specified key(s).
         Keys can be shown by the "key" command.
@@ -135,78 +140,58 @@ class ConsoleCommand(Command):
         if not args:
             return self.printhelp()
 
-        keys = json.dumps(args, ensure_ascii=False).encode('utf-8')
-        path = self.path('/'.join(('/keys', urllib.quote(keys, safe=''))))
-        code, body = self.client.get(path)
-        if code == 200:
-            for v in body.get('values', []):
-                json.dump(v, self.FILE, ensure_ascii=False)
-                self.print()
-        else:
-            self.print('[failed: %d]' % code)
-
-    def cmd_key(self, *args):
-        '''(no arguments required)
-        Display keys of the Markov Table.
-        '''
-        code, body = self.client.get(self.path('/keys'))
-        if code == 200:
-            for k in body.get('keys', []):
-                for i in k:
-                    json.dump(i, self.FILE, ensure_ascii=False)
-                    self.print(' ', end='')
-                self.print()
-        else:
-            self.print('[failed: %d]' % code)
+        values = self.client.values(self.instance, args)
+        if values is None:
+            return self.print('[failed]')
+        for v in values:
+            json.dump(v, self.FILE, ensure_ascii=False)
+            self.print()
 
     def cmd_entry(self, *args):
         '''(no arguments required)
         Display candidate entrypoints to generate a text.
         '''
-        code, body = self.client.get(self.path('/entrypoints'))
-        if code == 200:
-            for k in body.get('keys', []):
-                json.dump(k, self.FILE, ensure_ascii=False)
-                self.print()
-        else:
-            self.print('[failed: %d]' % code)
+        entries = self.client.entries(self.instance)
+        if entries is None:
+            return self.print('[failed]')
+        for e in entries:
+            json.dump(e, self.FILE, ensure_ascii=False)
+            self.print()
 
     def cmd_rentry(self, *args):
         '''(no arguments required)
         Display recent learned candidate entrypoints.
         '''
-        code, body = self.client.get(self.path('/recent-entrypoints'))
-        if code == 200:
-            for k in body.get('keys', []):
-                json.dump(k, self.FILE, ensure_ascii=False)
-                self.print()
-        else:
-            self.print('[failed: %d]' % code)
+        entries = self.client.recent_entries(self.instance)
+        if entries is None:
+            return self.print('[failed]')
+        for e in entries:
+            json.dump(e, self.FILE, ensure_ascii=False)
+            self.print()
 
     def cmd_history(self, *args):
         '''(no arguments required)
         Display recent learned/generated text.
         '''
-        code, body = self.client.get(self.path('/histories'))
-        if code == 200:
-            for k in body.get('histories', []):
-                json.dump(k, self.FILE, ensure_ascii=False)
-                self.print()
-        else:
-            self.print('[failed: %d]' % code)
+        histories = self.client.histories(self.instance)
+        if histories is None:
+            return self.print('[failed]')
+        for h in histories:
+            json.dump(h, self.FILE, ensure_ascii=False)
+            self.print()
 
     def cmd_stat(self, *args):
         '''(no arguments required)
         Display statistics.
         '''
-        code, body = self.client.get(self.path('/stats'))
-        if code == 200:
-            self.print('score threshold: %f' % body['threshold'])
-            self.print('markov maxchain: %d' % body['maxchain'])
-            self.print('markov keys:     %d' % body['keys'])
-            self.print('entrypoints:     %d' % body['entrypoints'])
-        else:
-            self.print('[failed: %d]' % code)
+        stats = self.client.stats(self.instance)
+        if stats is None:
+            return self.print('[failed]')
+
+        self.print('score threshold: %f' % stats['threshold'])
+        self.print('markov maxchain: %d' % stats['maxchain'])
+        self.print('markov keys:     %d' % stats['keys'])
+        self.print('entrypoints:     %d' % stats['entrypoints'])
 
 
 def main():

@@ -51,76 +51,46 @@ def learn(ircbot, conf, conn, event, msgfrom, replyto, msg):
     if replace_nick and msgfrom:
         msg = re.sub(replace_nick, msgfrom, msg)
 
-    client = util.HTTPClient(conf['server'], conf['port'])
-    path = '/'.join(('/v0.1', conf['instance']))
-    nr_retry = int(conf.get('nr_retry', 0))
+    client = util.http.APIClientV01(conf['server'], conf['port'])
+    if client.learn(conf['instance'], [msg], int(conf.get('nr_retry', 0))):
+        return {}
 
-    if nr_retry < 0:
-        logging.warn('[learn] detected nr_retry < 0')
-        nr_retry = 0
-
-    for x in xrange(1, nr_retry + 2):
-        code, _ = client.put(path, {'text': [msg]})
-
-        if code == 204:
-            return {}
-
-        logging.warn('[learn] [#%d] failed with %d / "%s"', x, code, msg)
-
+    logging.warn('[learn] failed to learn "%s"', msg)
     return None
 
 
 @ircplugin.action('talk')
 def talk(ircbot, conf, conn, event, msgfrom, replyto, msg):
-    client = util.HTTPClient(conf['server'], conf['port'])
-    path = '/'.join(('/v0.1', conf['instance']))
-    nr_retry = int(conf.get('nr_retry', 0))
+    client = util.http.APIClientV01(conf['server'], conf['port'])
+    score, text = client.generate(conf['instance'],
+                                  int(conf.get('nr_retry', 0)))
+    if None in (score, text):
+        logging.warn('[talk] failed to generate text')
+        return None
 
-    if nr_retry < 0:
-        logging.warn('[talk] detected nr_retry < 0')
-        nr_retry = 0
+    for line in text.splitlines():
+        if not line:
+            continue
+        conn.notice(replyto, line)
+        logging.info('[talk] [%s] %s> %s', replyto, conn.get_nickname(), line)
 
-    for x in xrange(1, nr_retry + 2):
-        code, body = client.get(path)
-
-        if code == 200:
-            for line in body['text'].splitlines():
-                if not line:
-                    continue
-                conn.notice(replyto, line)
-                logging.info('[talk] [%s] %s> %s',
-                             replyto, conn.get_nickname(), line)
-            return {}
-
-        logging.warn('[talk] [#%d] failed with %d', x, code)
-
-    return None
+    return {}
 
 
 @ircplugin.action('suggest')
 def suggest(ircbot, conf, conn, event, msgfrom, replyto, msg):
-    locale = conf.get('locale', 'en')
     nr_retry = int(conf.get('nr_retry', 0))
-
-    if nr_retry < 0:
-        logging.warn('[suggest] detected nr_retry < 0')
-        nr_retry = 0
-
-    client = util.HTTPClient(conf['server'], conf['port'])
-    path = '/'.join(('/v0.1', conf['instance'], 'recent-entrypoints'))
-
-    for x in xrange(1, nr_retry + 2):
-        code, body = client.get(path)
-        if code == 200:
-            break
-        logging.warn('[suggest] [#%d] failed with %d', x, code)
-    else:
-        return None
-    if not body['keys']:
+    client = util.http.APIClientV01(conf['server'], conf['port'])
+    keys = client.recent_entries(conf['instance'], nr_retry)
+    if not keys:
+        logging.warn('[suggest] failed to get recent entries')
         return None
 
-    result = util.gcomplete(random.choice(body['keys']), locale, nr_retry)
+    key = random.choice(keys)
+    gclient = util.http.GoogleClient()
+    result = gclient.complete(key, conf.get('locale', 'en'), nr_retry)
     if not result:
+        logging.warn('[suggest] failed to complete with "%s"', key)
         return None
 
     return {'suggested': random.choice(result)}
@@ -129,24 +99,13 @@ def suggest(ircbot, conf, conn, event, msgfrom, replyto, msg):
 @ircplugin.action('learn-jlyrics')
 def learn_jlyrics(ircbot, conf, conn, event, msgfrom, replyto, msg):
     nr_retry = int(conf.get('nr_retry', 0))
-
-    if nr_retry < 0:
-        logging.warn('[learn-jlyrics] detected nr_retry < 0')
-        nr_retry = 0
-
-    client = util.HTTPClient(conf['server'], conf['port'])
-    path = '/'.join(('/v0.1', conf['instance'], 'recent-entrypoints'))
-    for x in xrange(1, nr_retry + 2):
-        code, body = client.get(path)
-        if code == 200:
-            break
-        logging.warn('[learn-jlyrics] [#%d] failed with %d', x, code)
-    else:
-        return None
-    if not body['keys']:
+    client = util.http.APIClientV01(conf['server'], conf['port'])
+    keys = client.recent_entries(conf['instance'], nr_retry)
+    if not keys:
+        logging.warn('[learn-jlyrics] failed to get recent entries')
         return None
 
-    key = random.choice(body['keys'])
+    key = random.choice(keys)
     for title, title_id, artist, artist_id in util.jlyrics.search(lyrics=key):
         time.sleep(random.randint(1, 3))  # XXX: reduce server load
         lyrics = util.jlyrics.get(artist_id, title_id)
@@ -156,15 +115,9 @@ def learn_jlyrics(ircbot, conf, conn, event, msgfrom, replyto, msg):
         return None
 
     lines = [line.strip() for line in lyrics.splitlines() if line.strip()]
-    path = '/'.join(('/v0.1', conf['instance']))
-    for x in xrange(1, nr_retry + 2):
-        code, _ = client.put(path, {'text': lines})
+    if client.learn(conf['instance'], lines, nr_retry):
+        logging.info('[learn-jlyrics] learned with "%s"', key)
+        return {}
 
-        if code == 204:
-            logging.info('[learn-jlyrics] learned with "%s"', key)
-            return {}
-
-        logging.warn('[learn-jlyrics] [#%d] failed with %d / "%s"',
-                     x, code, key)
-
+    logging.warn('[learn-jlyrics] failed to learn with "%s"', key)
     return None
