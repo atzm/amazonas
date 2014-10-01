@@ -50,12 +50,8 @@ class IRC(irc.client.IRC):
         return c
 
 
-class SimpleIRCClient(irc.client.SimpleIRCClient):
+class SingleServerIRCBot(irc.bot.SingleServerIRCBot):
     manifold_class = IRC
-
-
-class SingleServerIRCBot(SimpleIRCClient, irc.bot.SingleServerIRCBot):
-    pass
 
 
 class IRCBot(SingleServerIRCBot):
@@ -95,11 +91,6 @@ class IRCBot(SingleServerIRCBot):
     def on_pubmsg(self, conn, event, replyto=None):
         self.handle_message(conn, event, event.source.nick,
                             event.target, event.arguments[0])
-
-    def send_message(self, conn, replyto, sect, msgdata={}):
-        message = config.get(sect, 'message')
-        if message:
-            conn.notice(replyto, message % msgdata)
 
     def handle_message(self, conn, event, msgfrom, replyto, msg):
         if msg.startswith('!'):
@@ -196,6 +187,12 @@ class IRCBot(SingleServerIRCBot):
                                           (action, self.connection, None,
                                            None, channel, None, sect))
             logging.info('[schedule] [%s] registered', sect)
+
+    @staticmethod
+    def send_message(conn, replyto, sect, msgdata={}):
+        message = config.get(sect, 'message')
+        if message:
+            conn.notice(replyto, message % msgdata)
 
     @staticmethod
     def isenabled(sect, nick=None, message=None):

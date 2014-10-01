@@ -20,7 +20,7 @@ setup(
     platforms=['Linux'],
     install_requires=[
         'flask>=0.10.1',
-        'irc>=8.5.1',
+        'irc>=8.9.1',
         'lxml>=3.3.5',
     ],
     classifiers=[

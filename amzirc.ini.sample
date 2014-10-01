@@ -18,6 +18,10 @@ path = /path/to/your/plugin/dir
 enable = true
 time   = 09:00-12:00 13:00-17:30
 
+[event:join:message]
+enable  = true
+message = ちょっと通りますよ
+
 [command:help]
 enable = true
 
