@@ -11,6 +11,8 @@ import contextlib
 import irc.bot
 import irc.buffer
 import irc.client
+import irc.functools
+import irc.connection
 
 from . import util
 from . import config
@@ -18,28 +20,42 @@ from . import ircplugin
 
 
 class DecodingLineBuffer(irc.buffer.DecodingLineBuffer):
-    encoding = 'utf-8'
-    errors = 'replace'
+    @property
+    def encoding(self):
+        return config.get('irc', 'encode')
+
+    @property
+    def errors(self):
+        return 'replace'
 
 
 class ServerConnection(irc.client.ServerConnection):
-    encoding = 'utf-8'
-    errors = 'replace'
     buffer_class = DecodingLineBuffer
 
-    def send_raw(self, string):
-        orig_sender = self.socket.send
+    @property
+    def encoding(self):
+        return config.get('irc', 'encode')
 
-        def sender(data, *args):
-            data = data.decode('utf-8', self.errors)
-            data = data.encode(self.encoding, self.errors)
-            return orig_sender(data, *args)
+    @property
+    def errors(self):
+        return 'replace'
 
-        try:
-            self.socket.send = sender
-            return super(ServerConnection, self).send_raw(string)
-        finally:
-            self.socket.send = orig_sender
+    @irc.functools.save_method_args
+    def connect(self, *args, **kwargs):
+        def wrapper(sock):
+            orig_sender = sock.send
+
+            def sender(data, *args, **kwargs):
+                data = data.decode('utf-8', self.errors)
+                data = data.encode(self.encoding, self.errors)
+                return orig_sender(data, *args, **kwargs)
+
+            sock.send = sender
+            return sock
+
+        return super(ServerConnection, self).connect(
+            connect_factory=irc.connection.Factory(wrapper=wrapper),
+            *args, **kwargs)
 
 
 class IRC(irc.client.IRC):
@@ -285,10 +301,6 @@ def main():
     config.read(args.config)
     setlogger(args.logging_config)
     loadmodules(config.get('plugin', 'path'))
-
-    encoding = config.get('irc', 'encode')
-    DecodingLineBuffer.encoding = encoding
-    ServerConnection.encoding = encoding
 
     bot = IRCBot()
 
