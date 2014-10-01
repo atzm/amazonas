@@ -32,22 +32,14 @@ class DecodingLineBuffer(irc.buffer.DecodingLineBuffer):
 class ServerConnection(irc.client.ServerConnection):
     buffer_class = DecodingLineBuffer
 
-    @property
-    def encoding(self):
-        return config.get('irc', 'encode')
-
-    @property
-    def errors(self):
-        return 'replace'
-
     @irc.functools.save_method_args
     def connect(self, *args, **kwargs):
         def wrapper(sock):
             orig_sender = sock.send
 
             def sender(data, *args, **kwargs):
-                data = data.decode('utf-8', self.errors)
-                data = data.encode(self.encoding, self.errors)
+                data = data.decode('utf-8', 'replace')
+                data = data.encode(config.get('irc', 'encode'), 'replace')
                 return orig_sender(data, *args, **kwargs)
 
             sock.send = sender
