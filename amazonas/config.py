@@ -11,6 +11,8 @@ class Config(RawConfigParser):
     ENCODE = 'utf-8'
 
     def reload(self):
+        for sect in self.sections():
+            self.remove_section(sect)
         self.read()
 
     def read(self, path=None):

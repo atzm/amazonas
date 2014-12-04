@@ -11,6 +11,7 @@ import contextlib
 import irc.bot
 import irc.buffer
 import irc.client
+import irc.schedule
 import irc.functools
 import irc.connection
 
@@ -57,6 +58,41 @@ class IRC(irc.client.IRC):
             self.connections.append(c)
         return c
 
+    def unregister_delayed(self, delay, func, args):
+        def match(cmd):
+            return isinstance(cmd, irc.schedule.DelayedCommand) and \
+                cmd.function.func == func and \
+                cmd.function.args == args and \
+                cmd.delay == delay
+        return self.unregister_schedule(match)
+
+    def unregister_every(self, delay, func, args):
+        def match(cmd):
+            return isinstance(cmd, irc.schedule.PeriodicCommand) and \
+                cmd.function.func == func and \
+                cmd.function.args == args and \
+                cmd.delay == delay
+        return self.unregister_schedule(match)
+
+    def unregister_schedule(self, match):
+        def index():
+            for i, cmd in enumerate(self.delayed_commands):
+                if match(cmd):
+                    return i
+            return -1
+
+        removed = []
+
+        with self.mutex:
+            while True:
+                idx = index()
+                if idx >= 0:
+                    removed.append(self.delayed_commands.pop(idx))
+                else:
+                    break
+
+        return removed
+
 
 class SingleServerIRCBot(irc.bot.SingleServerIRCBot):
     manifold_class = IRC
@@ -87,7 +123,7 @@ class IRCBot(SingleServerIRCBot):
         channel = config.get('irc', 'channel')
         conn.join(channel)
         logging.info('[welcome] joined <%s>', channel)
-        self.schedule()
+        self.register_schedule()
 
     def on_nicknameinuse(self, conn, event):
         conn.nick(conn.get_nickname() + '_')
@@ -165,7 +201,7 @@ class IRCBot(SingleServerIRCBot):
 
         return True
 
-    def schedule(self):
+    def register_schedule(self):
         channel = config.get('irc', 'channel')
 
         for schedule in config.getlist('irc', 'schedules'):
@@ -191,10 +227,17 @@ class IRCBot(SingleServerIRCBot):
                 logging.error('[schedule] [%s] interval too short', sect)
                 continue
 
-            self.connection.execute_every(interval, self.do_action,
-                                          (action, self.connection, None,
-                                           None, channel, None, sect))
+            self.ircobj.execute_every(interval, self.do_action,
+                                      (action, self.connection, None,
+                                       None, channel, None, sect))
             logging.info('[schedule] [%s] registered', sect)
+
+    def unregister_schedule(self):
+        def match(cmd):
+            return cmd.function.func == self.do_action
+
+        for cmd in self.ircobj.unregister_schedule(match):
+            logging.info('[schedule] [%s] unregistered', cmd.function.args[6])
 
     @staticmethod
     def send_message(conn, replyto, sect, msgdata={}):

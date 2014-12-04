@@ -41,7 +41,9 @@ def reload(ircbot, conn, event, msgfrom, replyto, *args):
     '''(no arguments required)
     Reload configuration.
     '''
+    ircbot.unregister_schedule()
     config.reload()
+    ircbot.register_schedule()
     logging.info('[reload] config reloaded')
     return {}
 
