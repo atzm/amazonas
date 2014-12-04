@@ -242,12 +242,14 @@ class IRCBot(SingleServerIRCBot):
     @property
     def users(self):
         channel = config.get('irc', 'channel')
-        return self.channels[channel].users()
+        nick = self.connection.get_nickname()
+        return list(set(self.channels[channel].users()) - set([nick]))
 
     @property
     def opers(self):
         channel = config.get('irc', 'channel')
-        return self.channels[channel].opers()
+        nick = self.connection.get_nickname()
+        return list(set(self.channels[channel].opers()) - set([nick]))
 
     @property
     def noopers(self):
@@ -255,7 +257,9 @@ class IRCBot(SingleServerIRCBot):
 
     @property
     def isoper(self):
-        return self.connection.get_nickname() in self.opers
+        channel = config.get('irc', 'channel')
+        nick = self.connection.get_nickname()
+        return self.channels[channel].is_oper(nick)
 
     @staticmethod
     def send_message(conn, replyto, sect, msgdata={}):
