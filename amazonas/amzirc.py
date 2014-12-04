@@ -239,6 +239,24 @@ class IRCBot(SingleServerIRCBot):
         for cmd in self.ircobj.unregister_schedule(match):
             logging.info('[schedule] [%s] unregistered', cmd.function.args[6])
 
+    @property
+    def users(self):
+        channel = config.get('irc', 'channel')
+        return self.channels[channel].users()
+
+    @property
+    def opers(self):
+        channel = config.get('irc', 'channel')
+        return self.channels[channel].opers()
+
+    @property
+    def noopers(self):
+        return list(set(self.users) - set(self.opers))
+
+    @property
+    def isoper(self):
+        return self.connection.get_nickname() in self.opers
+
     @staticmethod
     def send_message(conn, replyto, sect, msgdata={}):
         message = config.get(sect, 'message')
