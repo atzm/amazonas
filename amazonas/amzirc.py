@@ -94,11 +94,9 @@ class IRC(irc.client.IRC):
         return removed
 
 
-class SingleServerIRCBot(irc.bot.SingleServerIRCBot):
+class IRCBot(irc.bot.SingleServerIRCBot):
     manifold_class = IRC
 
-
-class IRCBot(SingleServerIRCBot):
     def __init__(self):
         spec = irc.bot.ServerSpec(config.get('irc', 'server'))
         port = config.getint('irc', 'port')
