@@ -87,7 +87,9 @@ class IRC(irc.client.IRC):
             while True:
                 idx = index()
                 if idx >= 0:
-                    removed.append(self.delayed_commands.pop(idx))
+                    cmd = self.delayed_commands.pop(idx)
+                    removed.append((cmd.delay,
+                                    cmd.function.func, cmd.function.args))
                 else:
                     break
 
@@ -234,8 +236,8 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         def match(cmd):
             return cmd.function.func == self.do_action
 
-        for cmd in self.ircobj.unregister_schedule(match):
-            logging.info('[schedule] [%s] unregistered', cmd.function.args[6])
+        for delay, func, args in self.ircobj.unregister_schedule(match):
+            logging.info('[schedule] [%s] unregistered', args[6])
 
     @property
     def users(self):
