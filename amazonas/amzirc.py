@@ -59,25 +59,21 @@ class IRC(irc.client.IRC):
         return c
 
     def unregister_delayed(self, delay, func, args):
-        def match(cmd):
+        def match(cmd, _delay, _func, _args):
             return isinstance(cmd, irc.schedule.DelayedCommand) and \
-                cmd.function.func == func and \
-                cmd.function.args == args and \
-                cmd.delay == delay
+                _delay == delay and _func == func and _args == args
         return self.unregister_schedule(match)
 
     def unregister_every(self, delay, func, args):
-        def match(cmd):
+        def match(cmd, _delay, _func, _args):
             return isinstance(cmd, irc.schedule.PeriodicCommand) and \
-                cmd.function.func == func and \
-                cmd.function.args == args and \
-                cmd.delay == delay
+                _delay == delay and _func == func and _args == args
         return self.unregister_schedule(match)
 
     def unregister_schedule(self, match):
         def index():
             for i, cmd in enumerate(self.delayed_commands):
-                if match(cmd):
+                if match(cmd, cmd.delay, cmd.function.func, cmd.function.args):
                     return i
             return -1
 
@@ -233,8 +229,8 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             logging.info('[schedule] [%s] registered', sect)
 
     def unregister_schedule(self):
-        def match(cmd):
-            return cmd.function.func == self.do_action
+        def match(cmd, delay, func, args):
+            return func == self.do_action
 
         for delay, func, args in self.ircobj.unregister_schedule(match):
             logging.info('[schedule] [%s] unregistered', args[6])
