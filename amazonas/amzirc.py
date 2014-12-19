@@ -19,6 +19,11 @@ from . import util
 from . import config
 from . import ircplugin
 
+try:
+    irc.client.Reactor
+except AttributeError:
+    irc.client.Reactor = irc.client.IRC
+
 
 class DecodingLineBuffer(irc.buffer.DecodingLineBuffer):
     @property
@@ -51,7 +56,7 @@ class ServerConnection(irc.client.ServerConnection):
             *args, **kwargs)
 
 
-class IRC(irc.client.IRC):
+class Reactor(irc.client.Reactor):
     def server(self):
         c = ServerConnection(self)
         with self.mutex:
@@ -93,7 +98,7 @@ class IRC(irc.client.IRC):
 
 
 class IRCBot(irc.bot.SingleServerIRCBot):
-    manifold_class = IRC
+    reactor_class = manifold_class = Reactor
 
     def __init__(self):
         spec = irc.bot.ServerSpec(config.get('irc', 'server'))
@@ -109,6 +114,11 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         super(IRCBot, self).__init__([spec], nick, nick)
         self.action_active = True
         self.connection.add_global_handler('all_events', self.dispatch_event)
+
+        try:
+            self.reactor
+        except AttributeError:
+            self.reactor = self.ircobj
 
     def dispatch_event(self, conn, event):
         for handler in ircplugin.getevent(event.type):
@@ -223,16 +233,16 @@ class IRCBot(irc.bot.SingleServerIRCBot):
                 logging.error('[schedule] [%s] interval too short', sect)
                 continue
 
-            self.ircobj.execute_every(interval, self.do_action,
-                                      (action, self.connection, None,
-                                       None, channel, None, sect))
+            self.reactor.execute_every(interval, self.do_action,
+                                       (action, self.connection, None,
+                                        None, channel, None, sect))
             logging.info('[schedule] [%s] registered', sect)
 
     def unregister_schedule(self):
         def match(cmd, delay, func, args):
             return func == self.do_action
 
-        for delay, func, args in self.ircobj.unregister_schedule(match):
+        for delay, func, args in self.reactor.unregister_schedule(match):
             logging.info('[schedule] [%s] unregistered', args[6])
 
     @property
