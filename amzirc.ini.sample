@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 
 [irc]
-daemon       = false
-server       = 127.0.0.1
-port         = 6667
-nick         = amazonas
-channel      = #amazonas
-encode       = utf-8
-quit_message = さようなら
-actions      = mylog mylearn myjlyrics mysuggest mytalk myoper mynull
-schedules    = myschedule
+daemon         = false
+server         = 127.0.0.1
+port           = 6667
+nick           = amazonas
+channel        = #amazonas
+encode         = utf-8
+command_prefix = !
+quit_message   = さようなら
+actions        = mylog mylearn myjlyrics mysuggest mytalk myoper mynull
+schedules      = myschedule
 
 [plugin]
 path = /path/to/your/plugin/dir
@@ -30,7 +31,7 @@ enable = true
 
 [command:reload]
 enable       = true
-nick_pattern = ^yesman
+nick_pattern = ^amzadm$
 message      = 設定再読込
 
 [command:activate]
@@ -101,7 +102,7 @@ instance    = first
 [action:myoper]
 enable       = true
 pattern      = なると(くれ|ください|ちょうだい)
-nick_pattern = ^yesman
+nick_pattern = ^amzadm$
 action       = oper
 fallthrough  = false
 message      = はいよ

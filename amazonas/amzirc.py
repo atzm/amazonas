@@ -143,7 +143,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
                             event.target, event.arguments[0])
 
     def handle_message(self, conn, event, msgfrom, replyto, msg):
-        if msg.startswith('!'):
+        if msg.startswith(config.get('irc', 'command_prefix') or '!'):
             return self.handle_command(conn, event, msgfrom, replyto, msg[1:])
 
         self.handle_action(conn, event, msgfrom, replyto, msg)
