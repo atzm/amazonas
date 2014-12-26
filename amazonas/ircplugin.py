@@ -17,12 +17,14 @@ _PLUGINS_EVENT = {}
 def action(name):
     def f(func):
         _PLUGINS_ACTION[name] = func
+        return func
     return f
 
 
 def command(name):
     def f(func):
         _PLUGINS_COMMAND[name] = func
+        return func
     return f
 
 
@@ -30,6 +32,7 @@ def event(name):
     def f(func):
         _PLUGINS_EVENT.setdefault(name, [])
         _PLUGINS_EVENT[name].append(func)
+        return func
     return f
 
 
