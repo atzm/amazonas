@@ -271,7 +271,9 @@ class IRCBot(irc.bot.SingleServerIRCBot):
     def send_message(conn, replyto, sect, msgdata={}):
         message = config.get(sect, 'message')
         if message:
-            conn.notice(replyto, message % msgdata)
+            f = message.encode('raw_unicode_escape').decode('unicode_escape')
+            for line in (f % msgdata).splitlines():
+                conn.notice(replyto, line)
 
     @staticmethod
     def isenabled(sect, nick=None, message=None):
