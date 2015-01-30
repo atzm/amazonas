@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import signal
 import logging
 import logging.config
 import argparse
@@ -32,6 +33,9 @@ def main():
                 debug=config.getboolean('web', 'debug'),
                 use_reloader=False)
 
+    def q(*args, **kwargs):
+        raise SystemExit()
+
     ap = argparse.ArgumentParser()
     ap.add_argument('-l', '--logging-config', type=util.abspath,
                     help='configuration file for the logging')
@@ -50,6 +54,9 @@ def main():
 
     for i in config.getlist('web', 'instances'):
         instance.register(i, textgen.TextGenerator.getinstance(i))
+
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, q)
 
     try:
         runapp(__name__)
