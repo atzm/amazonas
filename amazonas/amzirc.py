@@ -129,6 +129,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         channel = config.get('irc', 'channel')
         conn.join(channel)
         logging.info('[welcome] joined <%s>', channel)
+        self.unregister_schedule()
         self.register_schedule()
 
     def on_nicknameinuse(self, conn, event):
