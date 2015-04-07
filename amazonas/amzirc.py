@@ -112,13 +112,16 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             spec.password = password
 
         super(IRCBot, self).__init__([spec], nick, nick)
+        self.reactor = getattr(self, 'reactor', self.ircobj)
         self.action_active = True
         self.connection.add_global_handler('all_events', self.dispatch_event)
 
-        try:
-            self.reactor
-        except AttributeError:
-            self.reactor = self.ircobj
+        for name, events in ircplugin.iterevents():
+            if name != 'all':
+                continue
+            for evt in events:
+                func = lambda conn, event: evt(self, conn, event)
+                self.connection.add_global_handler('all_events', func, -15)
 
     def dispatch_event(self, conn, event):
         for handler in ircplugin.getevent(event.type):

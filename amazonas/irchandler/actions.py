@@ -14,13 +14,6 @@ def null(ircbot, conf, conn, event, msgfrom, replyto, msg):
     return {}
 
 
-@ircplugin.action('log')
-def log(ircbot, conf, conn, event, msgfrom, replyto, msg):
-    func = getattr(logging, conf.get('level', 'info'), logging.info)
-    func('[log]  [%s] %s> %s', replyto, msgfrom, msg)
-    return {}
-
-
 @ircplugin.action('oper')
 def oper(ircbot, conf, conn, event, msgfrom, replyto, msg):
     if not replyto or not msgfrom:

@@ -1,6 +1,33 @@
 # -*- coding: utf-8 -*-
 
+import logging
+
+from .. import config
 from .. import ircplugin
+
+
+@ircplugin.event('all')
+def log(ircbot, conn, event):
+    nick = getattr(event.source, 'nick', str(event.source))
+    level = config.get('event:all:log', 'level')
+    fmt = config.get('event:all:log', 'format')
+    ignore = config.getlist('event:all:log', 'ignore')
+
+    if not ircbot.isenabled('event:all:log', nick):
+        return
+
+    if event.type in ignore:
+        return
+
+    data = {
+        'type':    event.type,
+        'target':  event.target,
+        'nick':    nick,
+        'message': ' '.join(event.arguments),
+    }
+
+    fmt = fmt.encode('raw_unicode_escape').decode('unicode_escape')
+    getattr(logging, level, logging.info)(fmt % data)
 
 
 @ircplugin.event('join')
