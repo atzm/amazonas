@@ -61,17 +61,19 @@ notfound  = 見つかりませんでした
 enable      = true
 action      = replace
 fallthrough = true
-regex       = amazonas
+regex       = お前
 replace     = %(source)s
 
 [action:mylearn]
-enable      = true
-action      = learn
-fallthrough = true
-server      = 127.0.0.1
-port        = 8349
-nr_retry    = 2
-instance    = first
+enable        = true
+action        = learn
+fallthrough   = true
+replace_regex = amazonas
+replace_with  = %(source)s
+server        = 127.0.0.1
+port          = 8349
+nr_retry      = 2
+instance      = first
 
 [action:myjlyrics]
 enable      = true

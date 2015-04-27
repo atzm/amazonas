@@ -40,6 +40,9 @@ def replace(ircbot, conf, conn, event, data):
 
     regex = conf['regex']
     replace = conf['replace'] % data
+
+    # replace plugin manipulates the message itself,
+    # so it affects pattern matching of next actions.
     return {'message': re.sub(regex, replace, data['message'])}
 
 
@@ -49,12 +52,23 @@ def learn(ircbot, conf, conn, event, data):
         logging.error('[learn] cannot exec without any messages')
         return None
 
+    message = data['message']
+
+    # learn plugin manipulates the message temporarily,
+    # so it does not affect any other actions.
+    replace_regex = conf.get('replace_regex')
+    replace_with = conf.get('replace_with')
+    if replace_regex and replace_with:
+        replace_regex = re.compile(replace_regex)
+        replace_with = replace_with % data
+        message = replace_regex.sub(replace_with, message)
+
     retry = int(conf.get('nr_retry', 0))
     client = util.http.APIClientV01(conf['server'], conf['port'])
-    if client.learn(conf['instance'], [data['message']], retry):
+    if client.learn(conf['instance'], [message], retry):
         return {}
 
-    logging.warn('[learn] failed to learn "%s"', data['message'])
+    logging.warn('[learn] failed to learn "%s"', message)
     return None
 
 
