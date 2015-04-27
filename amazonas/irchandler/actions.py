@@ -10,50 +10,56 @@ from .. import ircplugin
 
 
 @ircplugin.action('null')
-def null(ircbot, conf, conn, event, msgfrom, replyto, msg):
+def null(ircbot, conf, conn, event, data):
     return {}
 
 
 @ircplugin.action('oper')
-def oper(ircbot, conf, conn, event, msgfrom, replyto, msg):
-    if not replyto or not msgfrom:
-        logging.error('[oper] cannot exec with "replyto:%s", "msgfrom:%s"',
-                      replyto, msgfrom)
+def oper(ircbot, conf, conn, event, data):
+    if 'target' not in data or 'source' not in data:
+        logging.error('[oper] cannot exec without "target" and "source"')
         return None
-    conn.mode(replyto, '+o %s' % msgfrom)
+    conn.mode(data['target'], '+o %s' % data['source'])
     return {}
 
 
 @ircplugin.action('disoper')
-def disoper(ircbot, conf, conn, event, msgfrom, replyto, msg):
-    if not replyto or not msgfrom:
-        logging.error('[disoper] cannot exec with "replyto:%s", "msgfrom:%s"',
-                      replyto, msgfrom)
+def disoper(ircbot, conf, conn, event, data):
+    if 'target' not in data or 'source' not in data:
+        logging.error('[disoper] cannot exec without "target" and "source"')
         return None
-    conn.mode(replyto, '-o %s' % msgfrom)
+    conn.mode(data['target'], '-o %s' % data['source'])
     return {}
 
 
+@ircplugin.action('replace')
+def replace(ircbot, conf, conn, event, data):
+    if 'message' not in data:
+        logging.error('[replace] cannot exec without any messages')
+        return None
+
+    regex = conf['regex']
+    replace = conf['replace'] % data
+    return {'message': re.sub(regex, replace, data['message'])}
+
+
 @ircplugin.action('learn')
-def learn(ircbot, conf, conn, event, msgfrom, replyto, msg):
-    if not msg:
+def learn(ircbot, conf, conn, event, data):
+    if 'message' not in data:
         logging.error('[learn] cannot exec without any messages')
         return None
 
-    replace_nick = conf.get('replace_nick', '')
-    if replace_nick and msgfrom:
-        msg = re.sub(replace_nick, msgfrom, msg)
-
+    retry = int(conf.get('nr_retry', 0))
     client = util.http.APIClientV01(conf['server'], conf['port'])
-    if client.learn(conf['instance'], [msg], int(conf.get('nr_retry', 0))):
+    if client.learn(conf['instance'], [data['message']], retry):
         return {}
 
-    logging.warn('[learn] failed to learn "%s"', msg)
+    logging.warn('[learn] failed to learn "%s"', data['message'])
     return None
 
 
 @ircplugin.action('talk')
-def talk(ircbot, conf, conn, event, msgfrom, replyto, msg):
+def talk(ircbot, conf, conn, event, data):
     client = util.http.APIClientV01(conf['server'], conf['port'])
     score, text = client.generate(conf['instance'],
                                   int(conf.get('nr_retry', 0)))
@@ -64,14 +70,15 @@ def talk(ircbot, conf, conn, event, msgfrom, replyto, msg):
     for line in text.splitlines():
         if not line:
             continue
-        conn.notice(replyto, line)
-        logging.info('[talk] [%s] %s> %s', replyto, conn.get_nickname(), line)
+        conn.notice(data['target'], line)
+        logging.info('[talk] [%s] %s> %s',
+                     data['target'], conn.get_nickname(), line)
 
     return {}
 
 
 @ircplugin.action('suggest')
-def suggest(ircbot, conf, conn, event, msgfrom, replyto, msg):
+def suggest(ircbot, conf, conn, event, data):
     nr_retry = int(conf.get('nr_retry', 0))
     client = util.http.APIClientV01(conf['server'], conf['port'])
     keys = client.recent_entries(conf['instance'], nr_retry)
@@ -90,7 +97,7 @@ def suggest(ircbot, conf, conn, event, msgfrom, replyto, msg):
 
 
 @ircplugin.action('learn-jlyrics')
-def learn_jlyrics(ircbot, conf, conn, event, msgfrom, replyto, msg):
+def learn_jlyrics(ircbot, conf, conn, event, data):
     nr_retry = int(conf.get('nr_retry', 0))
     client = util.http.APIClientV01(conf['server'], conf['port'])
     keys = client.recent_entries(conf['instance'], nr_retry)

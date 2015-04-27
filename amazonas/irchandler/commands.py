@@ -9,35 +9,36 @@ from .. import ircplugin
 
 
 @ircplugin.command('help')
-def help(ircbot, conn, event, msgfrom, replyto, *args):
+def help(ircbot, conn, event, data, *args):
     '''[<command>]
     Display help message.
     '''
     cmdlist = []
     for name, command in ircplugin.itercommands():
+        sect = ':'.join(('command', name))
         if args and args[0] != name:
             continue
-        if not ircbot.isenabled(':'.join(('command', name)), msgfrom):
+        if not ircbot.isenabled(sect, data.get('source')):
             continue
         cmdlist.append((name, command))
 
     for line in util.formathelp(cmdlist).splitlines():
-        conn.notice(replyto, line.rstrip())
+        conn.notice(data['target'], line.rstrip())
 
     return {}
 
 
 @ircplugin.command('version')
-def version(ircbot, conn, event, msgfrom, replyto, *args):
+def version(ircbot, conn, event, data, *args):
     '''(no arguments required)
     Display version information.
     '''
-    conn.notice(replyto, 'amazonas/0.0.1')
+    conn.notice(data['target'], 'amazonas/0.0.1')
     return {}
 
 
 @ircplugin.command('reload')
-def reload(ircbot, conn, event, msgfrom, replyto, *args):
+def reload(ircbot, conn, event, data, *args):
     '''(no arguments required)
     Reload configuration.
     '''
@@ -49,7 +50,7 @@ def reload(ircbot, conn, event, msgfrom, replyto, *args):
 
 
 @ircplugin.command('activate')
-def activate(ircbot, conn, event, msgfrom, replyto, *args):
+def activate(ircbot, conn, event, data, *args):
     '''(no arguments required)
     Enable any actions.
     '''
@@ -59,7 +60,7 @@ def activate(ircbot, conn, event, msgfrom, replyto, *args):
 
 
 @ircplugin.command('deactivate')
-def deactivate(ircbot, conn, event, msgfrom, replyto, *args):
+def deactivate(ircbot, conn, event, data, *args):
     '''(no arguments required)
     Disable any actions.
     '''
@@ -69,7 +70,7 @@ def deactivate(ircbot, conn, event, msgfrom, replyto, *args):
 
 
 @ircplugin.command('suggest')
-def suggest(ircbot, conn, event, msgfrom, replyto, *args):
+def suggest(ircbot, conn, event, data, *args):
     '''<val1> [<val2> [...]]
     Display suggestion(s) from specified values.
     '''
@@ -82,13 +83,13 @@ def suggest(ircbot, conn, event, msgfrom, replyto, *args):
     gclient = util.http.GoogleClient()
     result = gclient.complete(' '.join(args), locale, nr_retry)
     if not result:
-        conn.notice(replyto, notfound)
+        conn.notice(data['target'], notfound)
         return None
 
     if randomize:
         random.shuffle(result)
 
     for text in result[:limit]:
-        conn.notice(replyto, text)
+        conn.notice(data['target'], text)
 
     return {}

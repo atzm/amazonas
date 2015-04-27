@@ -139,56 +139,61 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         conn.nick(conn.get_nickname() + '_')
 
     def on_privmsg(self, conn, event):
-        self.handle_message(conn, event, event.source.nick,
-                            event.source.nick, event.arguments[0])
+        data = {'source': event.source.nick, 'target': event.source.nick,
+                'message': event.arguments[0]}
+        self.handle_message(conn, event, data)
 
     def on_pubmsg(self, conn, event, replyto=None):
-        self.handle_message(conn, event, event.source.nick,
-                            event.target, event.arguments[0])
+        data = {'source': event.source.nick, 'target': event.target,
+                'message': event.arguments[0]}
+        self.handle_message(conn, event, data)
 
-    def handle_message(self, conn, event, msgfrom, replyto, msg):
-        if msg.startswith(config.get('irc', 'command_prefix') or '!'):
-            return self.handle_command(conn, event, msgfrom, replyto, msg[1:])
+    def handle_message(self, conn, event, data):
+        cprefix = config.get('irc', 'command_prefix') or '!'
 
-        self.handle_action(conn, event, msgfrom, replyto, msg)
+        if data['message'].startswith(cprefix):
+            data['message'] = data['message'][len(cprefix):]
+            return self.handle_command(conn, event, data)
 
-    def handle_command(self, conn, event, msgfrom, replyto, msg):
+        self.handle_action(conn, event, data)
+
+    def handle_command(self, conn, event, data):
         try:
-            words = util.split(msg)
+            words = util.split(data['message'])
         except Exception as e:
-            conn.notice(replyto, str(e))
-            logging.error('[command] %s: "%s"', str(e), msg)
+            exc = '%s(%s)' % (e.__class__.__name__, e)
+            conn.notice(data['target'], exc)
+            logging.error('[command] %s: "%s"', exc, data['message'])
             return
 
         sect = ':'.join(('command', words[0]))
-        if not self.isenabled(sect, msgfrom):
+        if not self.isenabled(sect, data.get('source')):
             return
 
-        msgdata = {'msgfrom': msgfrom}
         handler = ircplugin.getcommand(words[0])
 
-        with exceptlog(sect, handler, msg) as run:
-            result = run(self, conn, event, msgfrom, replyto, *words[1:])
+        with exceptlog(sect, handler, data) as run:
+            result = run(self, conn, event, data, *words[1:])
 
             if result is None:
                 return
 
-            msgdata.update(result)
-            self.send_message(conn, replyto, sect, msgdata)
+            data.update(result)
+            self.send_message(conn, sect, data)
 
-    def handle_action(self, conn, event, msgfrom, replyto, msg):
+    def handle_action(self, conn, event, data):
         for action in config.getlist('irc', 'actions'):
             sect = ':'.join(('action', action))
-            success = self.do_action(sect, conn, event, msgfrom, replyto, msg)
+            success = self.do_action(sect, conn, event, data)
             if success and not config.getboolean(sect, 'fallthrough'):
                 break
 
-    def do_action(self, sect, conn, event, msgfrom, replyto, msg, sched=None):
+    def do_action(self, sect, conn, event, data, sched=None):
         if not self.action_active:
             return True
         if sched and not self.isenabled(sched):
             return False
-        if not self.isenabled(sect, msgfrom, msg):
+        if not self.isenabled(sect, data.get('source'), data.get('message')):
             return False
 
         action = config.get(sect, 'action')
@@ -196,18 +201,17 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             logging.error('[action] [%s] no action specified', sect)
             return False
 
-        msgdata = {'msgfrom': msgfrom}
         handler = ircplugin.getaction(action)
 
-        with exceptlog(sect, handler, msg) as run:
+        with exceptlog(sect, handler, data) as run:
             conf = config.as_dict(sect)
-            result = run(self, conf, conn, event, msgfrom, replyto, msg)
+            result = run(self, conf, conn, event, data)
 
             if result is None:
                 return False
 
-            msgdata.update(result)
-            self.send_message(conn, replyto, sect, msgdata)
+            data.update(result)
+            self.send_message(conn, sect, data)
 
         return True
 
@@ -239,7 +243,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 
             self.reactor.execute_every(interval, self.do_action,
                                        (action, self.connection, None,
-                                        None, channel, None, sect))
+                                        {'target': channel}, sect))
             logging.info('[schedule] [%s] registered', sect)
 
     def unregister_schedule(self):
@@ -272,12 +276,12 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         return self.channels[channel].is_oper(nick)
 
     @staticmethod
-    def send_message(conn, replyto, sect, msgdata={}):
+    def send_message(conn, sect, data):
         message = config.get(sect, 'message')
         if message:
             f = message.encode('raw_unicode_escape').decode('unicode_escape')
-            for line in (f % msgdata).splitlines():
-                conn.notice(replyto, line)
+            for line in (f % data).splitlines():
+                conn.notice(data['target'], line)
 
     @staticmethod
     def isenabled(sect, nick=None, message=None):
@@ -312,14 +316,14 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 
 
 @contextlib.contextmanager
-def exceptlog(name, func, message=None):
+def exceptlog(name, func, data={}):
     try:
         yield func
     except Exception as e:
-        msg = '[%s] %s: <%s.%s>' % (name, str(e),
-                                    func.__module__, func.__name__)
-        if message:
-            msg += ' / "%s"' % message
+        msg = '[%s] %s(%s): <%s.%s>' % (name, e.__class__.__name__, e,
+                                        func.__module__, func.__name__)
+        if data:
+            msg += ' / %s' % data
 
         logging.exception(msg)
 

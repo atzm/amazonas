@@ -22,7 +22,7 @@ def log(ircbot, conn, event):
     data = {
         'type':    event.type,
         'target':  event.target,
-        'nick':    nick,
+        'source':  nick,
         'message': ' '.join(event.arguments),
     }
 

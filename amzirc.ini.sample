@@ -9,7 +9,7 @@ channel        = #amazonas
 encode         = utf-8
 command_prefix = !
 quit_message   = さようなら
-actions        = mylearn myjlyrics mysuggest mytalk myoper mynull
+actions        = myreplace mylearn myjlyrics mysuggest mytalk myoper mynull
 schedules      = myschedule
 
 [plugin]
@@ -18,7 +18,7 @@ path = /path/to/your/plugin/dir
 [event:all:log]
 enable = true
 level  = info
-format = [%(type)s] [%(target)s] %(nick)s> %(message)s
+format = [%(type)s] [%(target)s] %(source)s> %(message)s
 ignore = all_raw_messages chanoprivsneeded ping pong
 
 [event:join:oper]
@@ -57,15 +57,21 @@ nr_retry  = 2
 randomize = true
 notfound  = 見つかりませんでした
 
+[action:myreplace]
+enable      = true
+action      = replace
+fallthrough = true
+regex       = amazonas
+replace     = %(source)s
+
 [action:mylearn]
-enable       = true
-action       = learn
-fallthrough  = true
-server       = 127.0.0.1
-port         = 8349
-nr_retry     = 2
-instance     = first
-replace_nick = amazonas
+enable      = true
+action      = learn
+fallthrough = true
+server      = 127.0.0.1
+port        = 8349
+nr_retry    = 2
+instance    = first
 
 [action:myjlyrics]
 enable      = true
@@ -114,7 +120,7 @@ percentage  = 50
 pattern     = こんにちは
 action      = null
 fallthrough = false
-message     = こんにちは %(msgfrom)s さん
+message     = こんにちは %(source)s さん
 
 [schedule:myschedule]
 enable   = true
