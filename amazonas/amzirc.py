@@ -251,7 +251,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             return func == self.do_action
 
         for delay, func, args in self.reactor.unregister_schedule(match):
-            logging.info('[schedule] [%s] unregistered', args[6])
+            logging.info('[schedule] [%s] unregistered', args[4])
 
     @property
     def users(self):
