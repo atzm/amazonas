@@ -36,9 +36,9 @@ enable = true
 enable = true
 
 [command:reload]
-enable       = true
-nick_pattern = ^amzadm$
-message      = 設定再読込
+enable         = true
+source_pattern = ^amzadm$
+message        = 設定再読込
 
 [command:activate]
 enable  = true
@@ -108,13 +108,13 @@ nr_retry    = 2
 instance    = first
 
 [action:myoper]
-enable       = true
-pattern      = なると(くれ|ください|ちょうだい)
-nick_pattern = ^amzadm$
-action       = oper
-fallthrough  = false
-message      = はいよ
-time         = 06:00-20:00
+enable         = true
+pattern        = なると(くれ|ください|ちょうだい)
+source_pattern = ^amzadm$
+action         = oper
+fallthrough    = false
+message        = はいよ
+time           = 06:00-20:00
 
 [action:mynull]
 enable      = true

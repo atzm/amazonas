@@ -8,12 +8,12 @@ from .. import ircplugin
 
 @ircplugin.event('all')
 def log(ircbot, conn, event):
-    nick = getattr(event.source, 'nick', str(event.source))
+    source = getattr(event.source, 'nick', str(event.source))
     level = config.get('event:all:log', 'level')
     fmt = config.get('event:all:log', 'format')
     ignore = config.getlist('event:all:log', 'ignore')
 
-    if not ircbot.isenabled('event:all:log', nick):
+    if not ircbot.isenabled('event:all:log', source):
         return
 
     if event.type in ignore:
@@ -22,7 +22,7 @@ def log(ircbot, conn, event):
     data = {
         'type':    event.type,
         'target':  event.target,
-        'source':  nick,
+        'source':  source,
         'message': ' '.join(event.arguments),
     }
 

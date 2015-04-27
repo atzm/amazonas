@@ -284,7 +284,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
                 conn.notice(data['target'], line)
 
     @staticmethod
-    def isenabled(sect, nick=None, message=None):
+    def isenabled(sect, source=None, message=None):
         if not config.has_section(sect):
             return False
 
@@ -300,16 +300,16 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             if time_ and not util.time_in(time_):
                 return False
 
-            if nick is not None:
-                if not re.search(config.get(sect, 'nick_pattern'), nick):
+            if source is not None:
+                if not re.search(config.get(sect, 'source_pattern'), source):
                     return False
 
             if message is not None:
                 if not re.search(config.get(sect, 'pattern'), message):
                     return False
         except:
-            logging.exception('[%s] nick="%s" message="%s"',
-                              sect, nick, message)
+            logging.exception('[%s] source="%s" message="%s"',
+                              sect, source, message)
             return False
 
         return True
