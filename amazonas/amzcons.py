@@ -5,7 +5,9 @@ from __future__ import print_function
 import os
 import sys
 import json
+import glob
 import fcntl
+import string
 import getopt
 import inspect
 import argparse
@@ -19,7 +21,11 @@ class Command(object):
     FILE = sys.stdout
 
     def complete(self, text, state):
-        candidates = [n for n, m in self.itercmd() if n.startswith(text)]
+        if readline.get_begidx() == 0:
+            candidates = [n for n, m in self.itercmd() if n.startswith(text)]
+        else:
+            candidates = glob.glob(os.path.expanduser(text) + '*')
+
         try:
             return candidates[state]
         except:
@@ -208,6 +214,7 @@ def main():
     name = os.path.splitext(ap.prog)[0]
     fsenc = sys.getfilesystemencoding()
 
+    readline.set_completer_delims(string.whitespace)
     readline.set_completer(cmd.complete)
     readline.parse_and_bind('tab: complete')
 
