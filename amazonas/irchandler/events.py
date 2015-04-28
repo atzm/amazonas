@@ -45,4 +45,4 @@ def message(ircbot, conn, event):
         return
     if event.source.nick != conn.get_nickname():
         return
-    ircbot.send_message(conn, event.target, 'event:join:message')
+    ircbot.send_message(conn, 'event:join:message', {'target': event.target})
