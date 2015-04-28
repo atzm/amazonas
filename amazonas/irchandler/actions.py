@@ -58,7 +58,7 @@ def learn(ircbot, conf, conn, event, data):
     # so it does not affect any other actions.
     replace_regex = conf.get('replace_regex')
     replace_with = conf.get('replace_with')
-    if replace_regex and replace_with:
+    if replace_regex and replace_with is not None:
         replace_regex = re.compile(replace_regex)
         replace_with = replace_with % data
         message = replace_regex.sub(replace_with, message)
