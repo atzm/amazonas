@@ -22,13 +22,34 @@ class Command(object):
 
     def complete(self, text, state):
         if readline.get_begidx() == 0:
-            candidates = [n for n, m in self.itercmd() if n.startswith(text)]
-        else:
-            candidates = glob.glob(os.path.expanduser(text) + '*')
+            return self.complete_cmd(text, state)
+
+        return self.complete_file(text, state)
+
+    def complete_cmd(self, text, state):
+        candidates = [n for n, m in self.itercmd() if n.startswith(text)]
+
+        if len(candidates) == 1:
+            candidates[0] += ' '
 
         try:
             return candidates[state]
-        except:
+        except IndexError:
+            return None
+
+    def complete_file(self, text, state):
+        candidates = glob.glob(os.path.expanduser(text) + '*')
+
+        if len(candidates) == 1:
+            if os.path.isdir(candidates[0]):
+                if not candidates[0].endswith('/'):
+                    candidates[0] += '/'
+            else:
+                candidates[0] += ' '
+
+        try:
+            return candidates[state]
+        except IndexError:
             return None
 
     def print(self, *args, **kwargs):
