@@ -112,7 +112,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             spec.password = password
 
         super(IRCBot, self).__init__([spec], nick, nick)
-        self.reactor = getattr(self, 'reactor', self.ircobj)
+        self.reactor = getattr(self, 'reactor', getattr(self, 'ircobj', None))
         self.action_active = True
         self.connection.add_global_handler('all_events', self.dispatch_event)
 
