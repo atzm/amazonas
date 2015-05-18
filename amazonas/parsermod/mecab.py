@@ -31,6 +31,9 @@ class Mecab(parser.Parser):
         u'記号':   (u'句点', u'一般'),
     }
 
+    def __init__(self, args='', **kw):
+        self.args = str(args)
+
     def isentry(self, word, info):
         if info[0] not in self.ENTRY_CLS:
             return False
@@ -54,7 +57,7 @@ class Mecab(parser.Parser):
         return True
 
     def parse(self, text):
-        tagger = MeCab.Tagger()
+        tagger = MeCab.Tagger(self.args)
         encode = tagger.dictionary_info().charset
 
         for text in text.encode(encode).splitlines():
@@ -62,7 +65,7 @@ class Mecab(parser.Parser):
 
             # unicode.strip/split treats wide space as delimiter by default
             for line in tagger.parse(text).splitlines():
-                line = unicode(line, encode).strip(' \t\r\n')
+                line = unicode(line, encode).strip('\t\r\n')
 
                 if not line or line == 'EOS':
                     break

@@ -36,10 +36,12 @@ maxchain = 50
 [parser:morph:first]
 type   = Juman
 path   = /usr/bin/juman
+#args   = -B -u
 encode = utf-8
 
 [parser:morph:second]
 type = Mecab
+#args = --node-format %M\t%H\n
 
 [db:markov:first]
 type = Redis

@@ -36,9 +36,9 @@ class Juman(parser.Parser):
         u'特殊':   (u'句点', u'記号'),
     }
 
-    def __init__(self, path='/usr/bin/juman', args=[], encode='utf-8', **kw):
+    def __init__(self, path='/usr/bin/juman', args='', encode='utf-8', **kw):
         self.path = path
-        self.args = args
+        self.args = str(args).split()
         self.encode = encode
         self.proc = None
         self.size = 0
