@@ -52,16 +52,14 @@ def learn(ircbot, conf, conn, event, data):
         logging.error('[learn] cannot exec without any messages')
         return None
 
-    message = data['message']
-
     # learn plugin manipulates the message temporarily,
     # so it does not affect any other actions.
+    message = data['message']
     replace_regex = conf.get('replace_regex')
     replace_with = conf.get('replace_with')
     if replace_regex and replace_with is not None:
-        replace_regex = re.compile(replace_regex)
         replace_with = replace_with % data
-        message = replace_regex.sub(replace_with, message)
+        message = re.sub(replace_regex, replace_with, message)
 
     retry = int(conf.get('nr_retry', 0))
     client = util.http.APIClientV01(conf['server'], conf['port'])
