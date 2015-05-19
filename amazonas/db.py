@@ -33,7 +33,7 @@ def dbclass(*type_):
                 _DB_CLASS.setdefault(t, collections.OrderedDict())
                 _DB_CLASS[t][cls.__name__] = cls
         else:
-            raise UserWarning('%s is not a valid db class' % cls.__name__)
+            raise TypeError('%s is not a valid db class' % cls.__name__)
         return cls
     return f
 

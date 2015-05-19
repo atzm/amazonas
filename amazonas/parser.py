@@ -32,7 +32,7 @@ def parserclass(*type_):
                 _PARSER_CLASS.setdefault(t, collections.OrderedDict())
                 _PARSER_CLASS[t][cls.__name__] = cls
         else:
-            raise UserWarning('%s is not a valid parser class' % cls.__name__)
+            raise TypeError('%s is not a valid parser class' % cls.__name__)
         return cls
     return f
 
