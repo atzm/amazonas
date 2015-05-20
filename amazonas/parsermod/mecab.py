@@ -48,6 +48,10 @@ class Mecab(parser.Parser):
             return False
         if info[1] not in self.END_CLS[info[0]]:
             return False
+        if info[5].startswith(u'未然'):
+            return False
+        if info[5].startswith(u'連用'):
+            return False
         return True
 
     def validate_hook(self, parsed):
