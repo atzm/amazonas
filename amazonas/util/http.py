@@ -64,10 +64,15 @@ class HTTPClient(object):
     def url(self, path, query={}):
         if self.https:
             scheme = 'https'
+            default_port = '443'
         else:
             scheme = 'http'
+            default_port = '80'
 
-        parts = [scheme, '://', self.host, ':', self.port, path]
+        if default_port == self.port:
+            parts = [scheme, '://', self.host, path]
+        else:
+            parts = [scheme, '://', self.host, ':', self.port, path]
 
         if query:
             parts.extend(['?', self.querystring(query)])
