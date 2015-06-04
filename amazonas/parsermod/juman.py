@@ -55,6 +55,8 @@ class Juman(parser.Parser):
             return False
         if info[1] not in self.END_CLS[info[0]]:
             return False
+        if info[2] in (u'ナ形容詞', u'子音動詞マ行'):
+            return False
         return True
 
     def validate_hook(self, parsed):
