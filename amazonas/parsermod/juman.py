@@ -55,7 +55,9 @@ class Juman(parser.Parser):
             return False
         if info[1] not in self.END_CLS[info[0]]:
             return False
-        if info[2] in (u'ナ形容詞', u'子音動詞マ行'):
+        if info[2] in (u'ナ形容詞',):
+            return False
+        if u'連用' in info[3]:
             return False
         return True
 
