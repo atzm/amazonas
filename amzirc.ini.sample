@@ -88,11 +88,11 @@ instance    = first
 [action:myhtml]
 enable      = true
 fallthrough = false
-pattern     = ^https?://
+pattern     = (https?://\S+)
 action      = html
 xpath       = //html/head/title
 timeout     = 2.0
-message     = %(text_content)s
+message     = "%(text_content)s" <%(url)s>
 
 [action:mysuggest]
 enable      = true

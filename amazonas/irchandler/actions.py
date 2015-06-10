@@ -110,16 +110,17 @@ def suggest(ircbot, conf, conn, event, data):
 
 @ircplugin.action('html')
 def html(ircbot, conf, conn, event, data):
-    if 'message' not in data:
-        logging.error('[html] cannot exec without any messages')
+    if 'match' not in data or not data['match'].groups():
+        logging.error('[html] cannot exec without URL pattern capture')
         return None
 
-    url = data['message'].split()[0]
+    url = data['match'].group(1)
     timeout = float(conf.get('timeout', 2.0))
     xpath = conf['xpath']
     content = util.http.HTML(url, timeout).getcontent(xpath)
 
     if content:
+        content.update(url=url)
         return content
 
     logging.warn('[html] failed to get %s on %s', xpath, url)
