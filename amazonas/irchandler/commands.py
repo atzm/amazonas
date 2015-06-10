@@ -18,7 +18,7 @@ def help(ircbot, conn, event, data, *args):
         sect = ':'.join(('command', name))
         if args and args[0] != name:
             continue
-        if not ircbot.isenabled(sect, data.get('source')):
+        if not ircbot.isenabled(sect, data.copy()):
             continue
         cmdlist.append((name, command))
 

@@ -167,7 +167,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             return
 
         sect = ':'.join(('command', words[0]))
-        if not self.isenabled(sect, data.get('source')):
+        if not self.isenabled(sect, data):
             return
 
         handler = ircplugin.getcommand(words[0])
@@ -193,7 +193,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             return True
         if sched and not self.isenabled(sched):
             return False
-        if not self.isenabled(sect, data.get('source'), data.get('message')):
+        if not self.isenabled(sect, data):
             return False
 
         action = config.get(sect, 'action')
@@ -284,7 +284,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
                 conn.notice(data['target'], line)
 
     @staticmethod
-    def isenabled(sect, source=None, message=None):
+    def isenabled(sect, data={}):
         if not config.has_section(sect):
             return False
 
@@ -300,16 +300,19 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             if time_ and not util.time_in(time_):
                 return False
 
-            if source is not None:
-                if not re.search(config.get(sect, 'source_pattern'), source):
+            if 'source' in data:
+                pattern = config.get(sect, 'source_pattern')
+                data['source_match'] = re.search(pattern, data['source'])
+                if not data['source_match']:
                     return False
 
-            if message is not None:
-                if not re.search(config.get(sect, 'pattern'), message):
+            if 'message' in data:
+                pattern = config.get(sect, 'pattern')
+                data['match'] = re.search(pattern, data['message'])
+                if not data['match']:
                     return False
         except:
-            logging.exception('[%s] source="%s" message="%s"',
-                              sect, source, message)
+            logging.exception('[%s] %s', sect, data)
             return False
 
         return True

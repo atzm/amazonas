@@ -13,7 +13,7 @@ def log(ircbot, conn, event):
     fmt = config.get('event:all:log', 'format')
     ignore = config.getlist('event:all:log', 'ignore')
 
-    if not ircbot.isenabled('event:all:log', source):
+    if not ircbot.isenabled('event:all:log', {'source': source}):
         return
 
     if event.type in ignore:
@@ -32,7 +32,7 @@ def log(ircbot, conn, event):
 
 @ircplugin.event('join')
 def oper(ircbot, conn, event):
-    if not ircbot.isenabled('event:join:oper', event.source.nick):
+    if not ircbot.isenabled('event:join:oper', {'source': event.source.nick}):
         return
     if event.source.nick == conn.get_nickname():
         return
