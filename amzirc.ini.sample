@@ -19,7 +19,7 @@ path = /path/to/your/plugin/dir
 enable = true
 level  = info
 format = [%(type)s] [%(target)s] %(source)s> %(message)s
-ignore = all_raw_messages chanoprivsneeded ping pong
+ignore = all_raw_messages ping pong
 
 [event:join:oper]
 enable = true
