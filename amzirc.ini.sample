@@ -9,7 +9,7 @@ channel        = #amazonas
 encode         = utf-8
 command_prefix = !
 quit_message   = さようなら
-actions        = myreplace mylearn myjlyrics mysuggest mytalk myoper mynull
+actions        = myreplace mylearn myjlyrics myhtml mysuggest mytalk myoper mynull
 schedules      = myschedule
 
 [plugin]
@@ -84,6 +84,15 @@ server      = 127.0.0.1
 port        = 8349
 nr_retry    = 2
 instance    = first
+
+[action:myhtml]
+enable      = true
+fallthrough = false
+pattern     = ^https?://
+action      = html
+xpath       = //html/head/title
+timeout     = 2.0
+message     = %(text_content)s
 
 [action:mysuggest]
 enable      = true

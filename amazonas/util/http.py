@@ -6,6 +6,30 @@ import email
 import urllib
 import urllib2
 
+from contextlib import closing
+from lxml import html
+
+
+class HTML(object):
+    def __init__(self, url, timeout):
+        self.url = url
+        self.timeout = timeout
+        self.content = None
+
+    @property
+    def root(self):
+        if not self.content:
+            with closing(urllib2.urlopen(self.url, timeout=self.timeout)) as f:
+                self.content = html.parse(f)
+        return self.content.getroot()
+
+    def getcontent(self, xpath):
+        try:
+            p = self.root.xpath(xpath)[0]
+            return dict(text_content=p.text_content().strip(), **p.attrib)
+        except:
+            return {}
+
 
 class HTTPClient(object):
     def __init__(self, host, port, https=False, charset='utf-8'):
