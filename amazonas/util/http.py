@@ -16,11 +16,18 @@ class HTML(object):
         self.timeout = timeout
         self.content = None
 
+    @staticmethod
+    def getparser(headers):
+        for p in headers.getplist():
+            if p.lower().startswith('charset='):
+                return html.HTMLParser(encoding=p.split('=')[1])
+        return html.HTMLParser()
+
     @property
     def root(self):
         if not self.content:
             with closing(urllib2.urlopen(self.url, timeout=self.timeout)) as f:
-                self.content = html.parse(f)
+                self.content = html.parse(f, self.getparser(f.headers))
         return self.content.getroot()
 
     def getcontent(self, xpath):
