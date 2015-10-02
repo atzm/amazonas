@@ -6,6 +6,7 @@ server         = 127.0.0.1
 port           = 6667
 nick           = amazonas
 channel        = #amazonas
+channel_key    =
 encode         = utf-8
 command_prefix = !
 quit_message   = さようなら

@@ -130,7 +130,8 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 
     def on_welcome(self, conn, event):
         channel = config.get('irc', 'channel')
-        conn.join(channel)
+        key = config.get('irc', 'channel_key')
+        conn.join(channel, key)
         logging.info('[welcome] joined <%s>', channel)
         self.unregister_schedule()
         self.register_schedule()
