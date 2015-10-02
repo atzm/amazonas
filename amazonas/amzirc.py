@@ -206,6 +206,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 
         with exceptlog(sect, handler, data) as run:
             conf = config.as_dict(sect)
+            conf.setdefault('section', sect)
             result = run(self, conf, conn, event, data)
 
             if result is None:
