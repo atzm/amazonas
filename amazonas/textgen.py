@@ -140,7 +140,7 @@ class TextGenerator(object):
                 continue
 
             self.update_score_threshold(score)
-            if self.score_threshold < score:
+            if self.score_threshold <= score:
                 self.history.append(text)
                 return text, score
 
