@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import random
+import logging
 import operator
 import collections
 
@@ -127,6 +128,7 @@ class TextGenerator(object):
             try:
                 text = ''.join(self.markov.run(entrypoint)).strip()
             except:
+                logging.exception('failed to generate a text (%d)', x)
                 continue
             if not text:
                 continue
