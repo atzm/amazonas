@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import json
 import redis
 
 from .. import db
@@ -12,26 +11,19 @@ class Redis(db.Database):
         self.redis = redis.StrictRedis(host=host, port=int(port), db=int(db))
 
     def append(self, key, item):      # XXX: lose probability
-        self.redis.sadd(self.serialize(key),
-                        json.dumps(item, ensure_ascii=False))
+        self.redis.sadd(self.serialize(key), self.serialize(item))
 
     def get(self, key):
         vals = self.redis.smembers(self.serialize(key))
-        if not vals:
-            return None
-        return [json.loads(v) for v in vals]
+        return [self.deserialize(v) for v in vals] if vals else None
 
     def getrand(self, key):
         val = self.redis.srandmember(self.serialize(key))
-        if val is None:
-            return None
-        return json.loads(val)
+        return None if val is None else self.deserialize(val)
 
     def getrandall(self):             # XXX: not atomic
         key = self.redis.randomkey()
-        if key is None:
-            return None
-        return self.getrand(self.deserialize(key))
+        return None if key is None else self.getrand(self.deserialize(key))
 
     def keys(self):
         return [self.deserialize(k) for k in self.redis.keys()]
