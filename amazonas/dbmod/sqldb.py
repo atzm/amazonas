@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import random
 import contextlib
 
 from sqlalchemy import create_engine, Column, ForeignKey, Integer, Text
@@ -19,7 +18,7 @@ class MarkovKey(Base):
 
     id = Column(Integer, primary_key=True)
     key = Column(Text)
-    values = relationship('MarkovValue', uselist=True,
+    values = relationship('MarkovValue', uselist=True, backref='key',
                           cascade='all, delete-orphan')
 
 
@@ -33,11 +32,11 @@ class MarkovValue(Base):
 
 @db.dbclass(db.DBTYPE_MARKOV, db.DBTYPE_ENTRYPOINT)
 class SQL(db.Database):
-    def __init__(self, url, encoding='utf-8', **kw):
-        kw['echo'] = kw.get('echo', 'false').lower() == 'true'
+    def __init__(self, url, encoding='utf-8', echo='false', **kw):
+        echo = echo.lower() == 'true'
         self.url = url
         self.current_session = None
-        self.Engine = create_engine(url, encoding=encoding, **kw)
+        self.Engine = create_engine(url, encoding=encoding, echo=echo, **kw)
         self.Session = sessionmaker(bind=self.Engine)
         Base.metadata.create_all(self.Engine)
 
@@ -63,9 +62,7 @@ class SQL(db.Database):
             krow = MarkovKey(key=key)
             self.current_session.add(krow)
 
-        vrow = MarkovValue(value=item)
-        krow.values.append(vrow)
-        self.current_session.add(vrow)
+        krow.values.append(MarkovValue(value=item))
 
     def get(self, key):
         key = self.serialize(key)
@@ -77,17 +74,14 @@ class SQL(db.Database):
         return [self.deserialize(vrow.value) for vrow in krow.values]
 
     def getrand(self, key):
-        try:
-            return random.choice(self.get(key))
-        except:
-            return None
+        q = self.current_session.query(MarkovValue).join(MarkovValue.key)
+        q = q.filter(MarkovKey.key == self.serialize(key))
+        vrow = q.order_by(self.r).first()
+        return self.deserialize(vrow.value) if vrow else None
 
     def getrandall(self):
         vrow = self.current_session.query(MarkovValue).order_by(self.r).first()
-        if vrow:
-            return self.deserialize(vrow.value)
-
-        return None
+        return self.deserialize(vrow.value) if vrow else None
 
     def keys(self):
         return [self.deserialize(krow.key)
