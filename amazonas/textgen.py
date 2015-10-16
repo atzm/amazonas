@@ -42,41 +42,45 @@ class MarkovTable(object):
         entrypoint = None
         items = [''] * self.level
 
-        for item in itemlist:
-            if check(items):
-                key = tuple(items)
-                self.db.append(key, item)
+        with self.db.transaction():
+            for item in itemlist:
+                if check(items):
+                    key = tuple(items)
+                    self.db.append(key, item)
 
-                if not entrypoint:
-                    entrypoint = key
+                    if not entrypoint:
+                        entrypoint = key
 
-            items.pop(0)
-            items.append(item)
+                items.pop(0)
+                items.append(item)
 
         if entrypoint:
-            self.edb.append(entrypoint[0], entrypoint)
+            with self.edb.transaction():
+                self.edb.append(entrypoint[0], entrypoint)
 
         self.maxchain = (self.maxchain + len(itemlist)) / 2
 
     def run(self, entrypoint=None):
-        if entrypoint:
-            items = self.edb.getrand(entrypoint)
-        else:
-            items = self.edb.getrandall()
+        with self.edb.transaction():
+            if entrypoint:
+                items = self.edb.getrand(entrypoint)
+            else:
+                items = self.edb.getrandall()
         if items is None:
             return []
 
         items = list(items)
         data = items[:]
 
-        for x in xrange(self.maxchain):
-            item = self.db.getrand(tuple(items))
-            if item is None:
-                break
+        with self.db.transaction():
+            for x in xrange(self.maxchain):
+                item = self.db.getrand(tuple(items))
+                if item is None:
+                    break
 
-            data.append(item)
-            items.pop(0)
-            items.append(item)
+                data.append(item)
+                items.pop(0)
+                items.append(item)
 
         return data
 

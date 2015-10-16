@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 [web]
-instances = first second
+instances = first second third
 host      = 127.0.0.1
 port      = 8349
 daemon    = false
@@ -9,7 +9,7 @@ debug     = true
 
 [module]
 parsers   = juman mecab
-databases = dictdb redisdb
+databases = dictdb redisdb sqldb
 
 [textgen:first]
 score_threshold = 0.0
@@ -25,12 +25,23 @@ nr_history      = 50
 nr_wordclass    = 100
 nr_entrypoint   = 100
 
+[textgen:third]
+score_threshold = 0.0
+nr_retry        = 50
+nr_history      = 50
+nr_wordclass    = 100
+nr_entrypoint   = 100
+
 [markov:first]
 level    = 2
 maxchain = 50
 
 [markov:second]
 level    = 3
+maxchain = 50
+
+[markov:third]
+level    = 2
 maxchain = 50
 
 [parser:morph:first]
@@ -40,6 +51,10 @@ path   = /usr/bin/juman
 encode = utf-8
 
 [parser:morph:second]
+type = Mecab
+#args = --node-format %M\t%H\n
+
+[parser:morph:third]
 type = Mecab
 #args = --node-format %M\t%H\n
 
@@ -53,6 +68,11 @@ db   = 0
 type = Dict
 path = /path/to/markov.json
 
+[db:markov:third]
+type = SQL
+url  = sqlite:////path/to/markov.db
+echo = false
+
 [db:entrypoint:first]
 type = Redis
 host = localhost
@@ -62,3 +82,8 @@ db   = 1
 [db:entrypoint:second]
 type = Dict
 path = /path/to/entrypoint.json
+
+[db:entrypoint:third]
+type = SQL
+url  = sqlite:////path/to/entrypoint.db
+echo = false

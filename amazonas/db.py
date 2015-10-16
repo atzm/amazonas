@@ -2,6 +2,7 @@
 
 import json
 import importlib
+import contextlib
 import collections
 
 
@@ -41,6 +42,10 @@ def dbclass(*type_):
 class Database(object):
     def __init__(self, **kw):
         pass
+
+    @contextlib.contextmanager
+    def transaction(self):
+        yield
 
     def append(self, key, item):
         pass
