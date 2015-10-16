@@ -41,8 +41,7 @@ def root(inst):
 @mod.route('/<inst>/keys')
 def keys(inst):
     inst = getinstance(inst)
-    with inst.markov.db.transaction():
-        return flask.jsonify(keys=inst.markov.db.keys())
+    return flask.jsonify(keys=inst.markov.keys())
 
 
 @mod.route('/<inst>/keys/<path:keys>')
@@ -56,8 +55,7 @@ def values(inst, keys):
     if type(keys) is not list:
         flask.abort(400)
 
-    with inst.markov.db.transaction():
-        vals = inst.markov.db.get(tuple(keys))
+    vals = inst.markov.values(keys)
     if not vals:
         flask.abort(404)
 
@@ -67,8 +65,7 @@ def values(inst, keys):
 @mod.route('/<inst>/entrypoints')
 def entrypoints(inst):
     inst = getinstance(inst)
-    with inst.markov.edb.transaction():
-        return flask.jsonify(keys=inst.markov.edb.keys())
+    return flask.jsonify(keys=inst.markov.entrypoints())
 
 
 @mod.route('/<inst>/recent-entrypoints')
@@ -86,10 +83,7 @@ def histories(inst):
 @mod.route('/<inst>/stats')
 def stats(inst):
     inst = getinstance(inst)
-    with inst.markov.db.transaction():
-        keys = len(inst.markov.db)
-    with inst.markov.edb.transaction():
-        entrypoints = len(inst.markov.edb)
     return flask.jsonify(threshold=inst.score_threshold,
                          maxchain=inst.markov.maxchain,
-                         keys=keys, entrypoints=entrypoints)
+                         keys=inst.markov.key_length(),
+                         entrypoints=inst.markov.entrypoint_length())

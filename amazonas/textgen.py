@@ -84,6 +84,26 @@ class MarkovTable(object):
 
         return data
 
+    def keys(self):
+        with self.db.transaction():
+            return self.db.keys()
+
+    def values(self, keys):
+        with self.db.transaction():
+            return self.db.get(tuple(keys))
+
+    def entrypoints(self):
+        with self.edb.transaction():
+            return self.edb.keys()
+
+    def key_length(self):
+        with self.db.transaction():
+            return len(self.db)
+
+    def entrypoint_length(self):
+        with self.edb.transaction():
+            return len(self.edb)
+
 
 class TextGenerator(object):
     def __init__(self, parser, markov, **kw):
