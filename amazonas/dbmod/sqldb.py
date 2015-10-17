@@ -2,8 +2,11 @@
 
 import contextlib
 
-from sqlalchemy import create_engine, Column, ForeignKey, Integer, Text
+from sqlalchemy import desc, create_engine
+from sqlalchemy import Integer, String
+from sqlalchemy import UniqueConstraint, Column, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.expression import func
 
@@ -17,26 +20,28 @@ class MarkovKey(Base):
     __tablename__ = 'markov_key'
 
     id = Column(Integer, primary_key=True)
-    key = Column(Text, nullable=False)
+    key = Column(String(255), unique=True, nullable=False)
     values = relationship('MarkovValue', uselist=True, backref='key',
                           cascade='all, delete-orphan')
 
 
 class MarkovValue(Base):
     __tablename__ = 'markov_value'
+    __table_args__ = (UniqueConstraint('key_id', 'value'),)
 
     id = Column(Integer, primary_key=True)
     key_id = Column(Integer, ForeignKey('markov_key.id'), nullable=False)
-    value = Column(Text, nullable=False)
+    value = Column(String(255), nullable=False)
+    count = Column(Integer, nullable=False)
 
 
 @db.dbclass(db.DBTYPE_MARKOV, db.DBTYPE_ENTRYPOINT)
 class SQL(db.Database):
-    def __init__(self, url, encoding='utf-8', echo='false', **kw):
+    def __init__(self, url, echo='false', **kw):
         echo = echo.lower() == 'true'
         self.url = url
         self.current_session = None
-        self.Engine = create_engine(url, encoding=encoding, echo=echo, **kw)
+        self.Engine = create_engine(url, encoding='utf-8', echo=echo, **kw)
         self.Session = sessionmaker(bind=self.Engine)
         Base.metadata.create_all(self.Engine)
 
@@ -57,12 +62,21 @@ class SQL(db.Database):
         key = self.serialize(key)
         item = self.serialize(item)
 
-        krow = self.current_session.query(MarkovKey).filter_by(key=key).first()
-        if not krow:
+        try:
+            q = self.current_session.query(MarkovKey)
+            krow = q.filter_by(key=key).one()
+        except NoResultFound:
             krow = MarkovKey(key=key)
+            krow.values.append(MarkovValue(value=item, count=1))
             self.current_session.add(krow)
+            return
 
-        krow.values.append(MarkovValue(value=item))
+        try:
+            q = self.current_session.query(MarkovValue)
+            vrow = q.filter_by(key_id=krow.id).filter_by(value=item).one()
+            vrow.count += 1
+        except NoResultFound:
+            krow.values.append(MarkovValue(value=item, count=1))
 
     def get(self, key):
         key = self.serialize(key)
@@ -76,11 +90,12 @@ class SQL(db.Database):
     def getrand(self, key):
         q = self.current_session.query(MarkovValue).join(MarkovValue.key)
         q = q.filter(MarkovKey.key == self.serialize(key))
-        vrow = q.order_by(self.r).first()
+        vrow = q.order_by(desc(self.r * MarkovValue.count)).first()
         return self.deserialize(vrow.value) if vrow else None
 
     def getrandall(self):
-        vrow = self.current_session.query(MarkovValue).order_by(self.r).first()
+        q = self.current_session.query(MarkovValue)
+        vrow = q.order_by(desc(self.r * MarkovValue.count)).first()
         return self.deserialize(vrow.value) if vrow else None
 
     def keys(self):
@@ -93,7 +108,7 @@ class SQL(db.Database):
     @property
     def r(self):
         if self.url.startswith('sqlite'):
-            return func.random()
+            return func.abs(func.random())  # XXX: may be biased
         if self.url.startswith('mysql'):
             return func.rand()
         if self.url.startswith('postgresql'):
