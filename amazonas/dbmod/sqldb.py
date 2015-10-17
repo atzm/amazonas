@@ -17,7 +17,7 @@ class MarkovKey(Base):
     __tablename__ = 'markov_key'
 
     id = Column(Integer, primary_key=True)
-    key = Column(Text)
+    key = Column(Text, nullable=False)
     values = relationship('MarkovValue', uselist=True, backref='key',
                           cascade='all, delete-orphan')
 
@@ -26,8 +26,8 @@ class MarkovValue(Base):
     __tablename__ = 'markov_value'
 
     id = Column(Integer, primary_key=True)
-    key_id = Column(Integer, ForeignKey('markov_key.id'))
-    value = Column(Text)
+    key_id = Column(Integer, ForeignKey('markov_key.id'), nullable=False)
+    value = Column(Text, nullable=False)
 
 
 @db.dbclass(db.DBTYPE_MARKOV, db.DBTYPE_ENTRYPOINT)
