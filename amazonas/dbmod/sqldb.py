@@ -2,7 +2,9 @@
 
 import contextlib
 
-from sqlalchemy import create_engine, Column, ForeignKey, Integer, Text
+from sqlalchemy import create_engine
+from sqlalchemy import Integer, String
+from sqlalchemy import UniqueConstraint, Column, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.expression import func
@@ -17,7 +19,7 @@ class MarkovKey(Base):
     __tablename__ = 'markov_key'
 
     id = Column(Integer, primary_key=True)
-    key = Column(Text, nullable=False)
+    key = Column(String(255), unique=True, nullable=False)
     values = relationship('MarkovValue', uselist=True, backref='key',
                           cascade='all, delete-orphan')
 
@@ -27,16 +29,16 @@ class MarkovValue(Base):
 
     id = Column(Integer, primary_key=True)
     key_id = Column(Integer, ForeignKey('markov_key.id'), nullable=False)
-    value = Column(Text, nullable=False)
+    value = Column(String(255), nullable=False)
 
 
 @db.dbclass(db.DBTYPE_MARKOV, db.DBTYPE_ENTRYPOINT)
 class SQL(db.Database):
-    def __init__(self, url, encoding='utf-8', echo='false', **kw):
+    def __init__(self, url, echo='false', **kw):
         echo = echo.lower() == 'true'
         self.url = url
         self.current_session = None
-        self.Engine = create_engine(url, encoding=encoding, echo=echo, **kw)
+        self.Engine = create_engine(url, encoding='utf-8', echo=echo, **kw)
         self.Session = sessionmaker(bind=self.Engine)
         Base.metadata.create_all(self.Engine)
 
