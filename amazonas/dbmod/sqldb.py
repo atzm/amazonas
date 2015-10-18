@@ -28,12 +28,32 @@ class MarkovValue(Base):
     __tablename__ = 'markov_value'
 
     id = Column(Integer, primary_key=True)
-    key_id = Column(Integer, ForeignKey('markov_key.id'), nullable=False)
+    key_id = Column(Integer, ForeignKey(MarkovKey.id), nullable=False)
     value = Column(String(255), nullable=False)
 
 
-@db.dbclass(db.DBTYPE_MARKOV, db.DBTYPE_ENTRYPOINT)
-class SQL(db.Database):
+class EntrypointKey(Base):
+    __tablename__ = 'entrypoint_key'
+
+    id = Column(Integer, primary_key=True)
+    key = Column(String(255), unique=True, nullable=False)
+    values = relationship('EntrypointValue', uselist=True, backref='key',
+                          cascade='all, delete-orphan')
+
+
+class EntrypointValue(Base):
+    __tablename__ = 'entrypoint_value'
+
+    id = Column(Integer, primary_key=True)
+    key_id = Column(Integer, ForeignKey(EntrypointKey.id), nullable=False)
+    value = Column(String(255), nullable=False)
+
+
+@db.dbclass(db.DBTYPE_MARKOV)
+class MarkovSQL(db.Database):
+    TABLE_KEY = MarkovKey
+    TABLE_VALUE = MarkovValue
+
     def __init__(self, url, echo='false', **kw):
         echo = echo.lower() == 'true'
         self.url = url
@@ -59,38 +79,42 @@ class SQL(db.Database):
         key = self.serialize(key)
         item = self.serialize(item)
 
-        krow = self.current_session.query(MarkovKey).filter_by(key=key).first()
+        q = self.current_session.query(self.TABLE_KEY)
+        krow = q.filter_by(key=key).first()
         if not krow:
-            krow = MarkovKey(key=key)
+            krow = self.TABLE_KEY(key=key)
             self.current_session.add(krow)
 
-        krow.values.append(MarkovValue(value=item))
+        krow.values.append(self.TABLE_VALUE(value=item))
 
     def get(self, key):
         key = self.serialize(key)
 
-        krow = self.current_session.query(MarkovKey).filter_by(key=key).first()
+        q = self.current_session.query(self.TABLE_KEY)
+        krow = q.filter_by(key=key).first()
         if not krow:
             return None
 
         return [self.deserialize(vrow.value) for vrow in krow.values]
 
     def getrand(self, key):
-        q = self.current_session.query(MarkovValue).join(MarkovValue.key)
-        q = q.filter(MarkovKey.key == self.serialize(key))
+        q = self.current_session.query(self.TABLE_VALUE)
+        q = q.join(self.TABLE_VALUE.key)
+        q = q.filter(self.TABLE_KEY.key == self.serialize(key))
         vrow = q.order_by(self.r).first()
         return self.deserialize(vrow.value) if vrow else None
 
     def getrandall(self):
-        vrow = self.current_session.query(MarkovValue).order_by(self.r).first()
+        q = self.current_session.query(self.TABLE_VALUE)
+        vrow = q.order_by(self.r).first()
         return self.deserialize(vrow.value) if vrow else None
 
     def keys(self):
         return [self.deserialize(krow.key)
-                for krow in self.current_session.query(MarkovKey).all()]
+                for krow in self.current_session.query(self.TABLE_KEY).all()]
 
     def length(self):
-        return self.current_session.query(MarkovKey).count()
+        return self.current_session.query(self.TABLE_KEY).count()
 
     @property
     def r(self):
@@ -103,3 +127,9 @@ class SQL(db.Database):
         if self.url.startswith('oracle'):
             return 'dbms_random.value'
         raise NotImplementedError()
+
+
+@db.dbclass(db.DBTYPE_ENTRYPOINT)
+class EntrypointSQL(MarkovSQL):
+    TABLE_KEY = EntrypointKey
+    TABLE_VALUE = EntrypointValue

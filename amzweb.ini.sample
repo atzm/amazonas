@@ -69,8 +69,8 @@ type = Dict
 path = /path/to/markov.json
 
 [db:markov:third]
-type = SQL
-url  = sqlite:////path/to/markov.db
+type = MarkovSQL
+url  = sqlite:////path/to/third.db
 echo = false
 
 [db:entrypoint:first]
@@ -84,6 +84,6 @@ type = Dict
 path = /path/to/entrypoint.json
 
 [db:entrypoint:third]
-type = SQL
-url  = sqlite:////path/to/entrypoint.db
+type = EntrypointSQL
+url  = sqlite:////path/to/third.db
 echo = false
