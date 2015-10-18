@@ -4,7 +4,7 @@ import contextlib
 
 from sqlalchemy import create_engine
 from sqlalchemy import Integer, String
-from sqlalchemy import UniqueConstraint, Column, ForeignKey
+from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.expression import func
