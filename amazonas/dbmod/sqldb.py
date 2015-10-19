@@ -98,16 +98,22 @@ class MarkovSQL(db.Database):
         return [self.deserialize(vrow.value) for vrow in krow.values]
 
     def getrand(self, key):
-        q = self.current_session.query(self.TABLE_VALUE)
-        q = q.join(self.TABLE_VALUE.key)
-        q = q.filter(self.TABLE_KEY.key == self.serialize(key))
-        vrow = q.order_by(self.r).first()
-        return self.deserialize(vrow.value) if vrow else None
+        subq = self.current_session.query(self.TABLE_VALUE)
+        subq = subq.join(self.TABLE_VALUE.key)
+        subq = subq.filter(self.TABLE_KEY.key == self.serialize(key))
+        subq = subq.order_by(self.r).limit(1).subquery()
+        q = self.current_session.query(self.TABLE_VALUE, subq)
+        q = q.filter(self.TABLE_VALUE.id == subq.c.id)
+        vrows = q.first()
+        return self.deserialize(vrows[0].value) if vrows else None
 
     def getrandall(self):
-        q = self.current_session.query(self.TABLE_VALUE)
-        vrow = q.order_by(self.r).first()
-        return self.deserialize(vrow.value) if vrow else None
+        subq = self.current_session.query(self.TABLE_VALUE.id)
+        subq = subq.order_by(self.r).limit(1).subquery()
+        q = self.current_session.query(self.TABLE_VALUE, subq)
+        q = q.filter(self.TABLE_VALUE.id == subq.c.id)
+        vrows = q.first()
+        return self.deserialize(vrows[0].value) if vrows else None
 
     def keys(self):
         return [self.deserialize(krow.key)
