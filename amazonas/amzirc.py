@@ -308,6 +308,12 @@ class IRCBot(irc.bot.SingleServerIRCBot):
                 if not data['source_match']:
                     return False
 
+            if 'target' in data:
+                pattern = config.get(sect, 'target_pattern')
+                data['target_match'] = re.search(pattern, data['target'])
+                if not data['target_match']:
+                    return False
+
             if 'message' in data:
                 pattern = config.get(sect, 'pattern')
                 data['match'] = re.search(pattern, data['message'])
