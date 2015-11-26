@@ -36,6 +36,8 @@ def oper(ircbot, conn, event):
         return
     if event.source.nick == conn.get_nickname():
         return
+    if event.source.nick in ircbot.opers:
+        return
     conn.mode(event.target, '+o %s' % event.source.nick)
 
 
