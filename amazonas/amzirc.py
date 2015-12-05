@@ -167,6 +167,9 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             logging.error('[command] %s: "%s"', exc, data['message'])
             return
 
+        if not words:
+            words = ['']
+
         sect = ':'.join(('command', words[0]))
         if not self.isenabled(sect, data):
             return
