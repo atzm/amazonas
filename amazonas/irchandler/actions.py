@@ -35,7 +35,9 @@ def disoper(ircbot, conf, conn, event, data):
 @ircplugin.action('random')
 def random_(ircbot, conf, conn, event, data):
     action = random.choice(util.split(conf['invoke']))
-    return ircbot.do_action(':'.join(('action', action)), conn, event, data)
+    if ircbot.do_action(':'.join(('action', action)), conn, event, data):
+        return {}
+    return None
 
 
 @ircplugin.action('replace')
