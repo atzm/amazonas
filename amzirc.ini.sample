@@ -10,7 +10,7 @@ channel_key    =
 encode         = utf-8
 command_prefix = !
 quit_message   = さようなら
-actions        = myreplace mylearn myjlyrics myhtml mysuggest mytalk myoper mynull
+actions        = myreplace mylearn myjlyrics myhtml mysuggest mytalk myoper mynull myrandom
 schedules      = myschedule
 
 [plugin]
@@ -133,6 +133,25 @@ pattern     = こんにちは
 action      = null
 fallthrough = false
 message     = こんにちは %(source)s さん
+
+[action:myrandom]
+enable      = true
+pattern     = おみくじ
+action      = random
+fallthrough = false
+invoke      = omikuji1 omikuji2
+
+[action:omikuji1]
+enable      = true
+action      = null
+fallthrough = false
+message     = 凶
+
+[action:omikuji2]
+enable      = true
+action      = null
+fallthrough = false
+message     = 大凶
 
 [schedule:myschedule]
 enable   = true

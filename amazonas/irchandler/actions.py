@@ -32,6 +32,12 @@ def disoper(ircbot, conf, conn, event, data):
     return {}
 
 
+@ircplugin.action('random')
+def random_(ircbot, conf, conn, event, data):
+    action = random.choice(util.split(conf['invoke']))
+    return ircbot.do_action(':'.join(('action', action)), conn, event, data)
+
+
 @ircplugin.action('replace')
 def replace(ircbot, conf, conn, event, data):
     if 'message' not in data:
