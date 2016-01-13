@@ -141,11 +141,15 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 
     def on_privmsg(self, conn, event):
         data = {'source': event.source.nick, 'target': event.source.nick,
+                'nick0': self.connection.get_nickname(),
+                'nick1': self.random_user(event.source.nick),
                 'message': event.arguments[0]}
         self.handle_message(conn, event, data)
 
     def on_pubmsg(self, conn, event, replyto=None):
         data = {'source': event.source.nick, 'target': event.target,
+                'nick0': self.connection.get_nickname(),
+                'nick1': self.random_user(event.source.nick),
                 'message': event.arguments[0]}
         self.handle_message(conn, event, data)
 
@@ -257,6 +261,13 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 
         for delay, func, args in self.reactor.unregister_schedule(match):
             logging.info('[schedule] [%s] unregistered', args[4])
+
+    def random_user(self, default):
+        try:
+            return random.choice(self.users)
+        except IndexError:
+            pass
+        return default
 
     @property
     def users(self):
