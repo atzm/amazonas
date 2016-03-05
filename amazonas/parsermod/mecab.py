@@ -64,11 +64,11 @@ class Mecab(parser.Parser):
         tagger = MeCab.Tagger(self.args)
         encode = tagger.dictionary_info().charset
 
-        for text in text.encode(encode).splitlines():
-            text = text.strip()
-
+        for text in text.splitlines():
             # unicode.strip/split treats wide space as delimiter by default
-            for line in tagger.parse(text).splitlines():
+            text = text.strip('\t\r\n')
+
+            for line in tagger.parse(text.encode(encode)).splitlines():
                 line = unicode(line, encode).strip('\t\r\n')
 
                 if not line or line == 'EOS':
