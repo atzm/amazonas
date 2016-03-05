@@ -68,17 +68,20 @@ class Juman(parser.Parser):
         return True
 
     def parse(self, text):
-        for text in text.encode(self.encode).splitlines():
-            text = text.strip() + '\n'
-            if len(text) > self.PIPE_BUF:
+        for text in text.splitlines():
+            # unicode.strip/split treats wide space as delimiter by default.
+            text = text.strip('\t\r\n') + '\n'
+            encoded_text = text.encode(self.encode)
+            if len(encoded_text) > self.PIPE_BUF:
                 continue
 
-            p = self.getproc(text)
-            p.stdin.write(text)
+            p = self.getproc(encoded_text)
+            p.stdin.write(encoded_text)
             p.stdin.flush()
 
             while True:
-                line = unicode(p.stdout.readline().rstrip(), self.encode)
+                line = unicode(p.stdout.readline(), self.encode)
+                line = line.rstrip('\t\r\n')
                 if not line or line == 'EOS':
                     break
 
@@ -100,8 +103,8 @@ class Juman(parser.Parser):
             # pseudo word class for multi-line text generation
             yield '\n', [u'特殊', u'改行', '*',  '*', None]
 
-    def getproc(self, text):
-        self.size += len(text)
+    def getproc(self, encoded_text):
+        self.size += len(encoded_text)
 
         if self.proc:
             if self.size < self.JUMAN_RESPAWN_THRESHOLD:
