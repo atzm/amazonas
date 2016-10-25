@@ -5,6 +5,7 @@ import ssl
 import time
 import json
 import random
+import urllib
 import urllib2
 import logging
 import logging.config
@@ -44,7 +45,8 @@ def post(text):
         ctx = ssl._create_unverified_context()
 
     try:
-        req = urllib2.Request(url, 'payload=' + json.dumps(makebody(text)))
+        body = urllib.urlencode({'payload': json.dumps(makebody(text))})
+        req = urllib2.Request(url, body)
         urllib2.urlopen(req, context=ctx).read()
     except:
         logging.exception('[post] %s', locals())
