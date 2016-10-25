@@ -1,0 +1,95 @@
+# -*- coding: utf-8 -*-
+
+[mm]
+daemon = false
+debug  = true
+
+username  = amazonas
+icon_url  = 
+actions   = mylog myreload myhtml mysuggest myreplace mylearn mytalk
+schedules = myschedule
+
+[plugin]
+path = /path/to/your/plugin/dir
+
+[outgoing]
+host    = 0.0.0.0
+port    = 8390
+ssl_crt = /path/to/server.crt
+ssl_key = /path/to/server.key
+path    = /mm/amazonas/
+token   = token-for-outgoing-webhook
+
+[incoming]
+url        = https://url/to/incoming/webhook
+ssl_verify = true
+
+[action:mylog]
+enable      = true
+action      = log
+fallthrough = true
+level       = info
+format      = [%(team_domain)s] [%(channel_name)s] %(user_name)s> %(text)s
+
+[action:myreload]
+enable       = true
+action       = reload
+fallthrough  = false
+pattern      = ^reload$
+user_pattern = ^amzadm$
+text         = 設定再読込
+
+[action:myhtml]
+enable      = true
+fallthrough = false
+pattern     = (https?://\S+)
+action      = html
+xpath       = //html/head/title
+timeout     = 2.0
+message     = "%(text_content)s" <%(url)s>
+
+[action:mysuggest]
+enable      = true
+percentage  = 8
+action      = suggest
+fallthrough = false
+message     = もしかして: %(suggested)s
+instance    = first
+server      = 127.0.0.1
+port        = 8349
+nr_retry    = 2
+locale      = ja
+
+[action:myreplace]
+enable      = true
+action      = replace
+fallthrough = true
+regex       = お前
+replace     = %(user_name)s
+
+[action:mylearn]
+enable        = true
+action        = learn
+fallthrough   = true
+replace_regex = amazonas
+replace_with  = %(user_name)s
+server        = 127.0.0.1
+port          = 8349
+nr_retry      = 2
+instance      = first
+
+[action:mytalk]
+enable      = true
+pattern     = amazonas
+action      = talk
+fallthrough = false
+server      = 127.0.0.1
+port        = 8349
+nr_retry    = 2
+instance    = first
+
+[schedule:myschedule]
+enable   = true
+action   = mytalk
+interval = 1234
+time     = 09:00-12:00 13:00-17:30

@@ -15,6 +15,7 @@ setup(
         'amzcons = amazonas.amzcons:main',
         'amzweb  = amazonas.amzweb:main',
         'amzirc  = amazonas.amzirc:main',
+        'amzmm   = amazonas.amzmm:main',
     ]},
     packages=find_packages(exclude=['test']),
     platforms=['Linux'],
