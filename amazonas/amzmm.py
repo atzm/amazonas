@@ -146,6 +146,8 @@ class OutgoingHandler(object):
         return True
 
 
+# config module is not fully thread-safe, so race condition problem
+# may be caused when config.reload() and so on are called by other threads
 class Scheduler(threading.Thread):
     def __init__(self):
         super(Scheduler, self).__init__()
