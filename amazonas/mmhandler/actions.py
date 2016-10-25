@@ -19,7 +19,8 @@ def log_(obj, conf):
     level = conf.get('level', 'info')
     fmt = conf.get('format', '')
     fmt = fmt.encode('raw_unicode_escape').decode('unicode_escape')
-    getattr(logging, level, logging.info)(fmt % obj.data)
+    body = (fmt % obj.data).replace('\n', r'\n')
+    getattr(logging, level, logging.info)(body)
 
 
 @mmplugin.action('reload')
