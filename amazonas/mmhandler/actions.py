@@ -32,7 +32,7 @@ def reload(obj, conf):
 @mmplugin.action('random')
 def random_(obj, conf):
     action = random.choice(util.split(conf['invoke']))
-    obj.action(':'.join(('action', action)))
+    return obj.action(':'.join(('action', action)))
 
 
 @mmplugin.action('replace')
