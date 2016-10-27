@@ -27,14 +27,15 @@ def root():
     if flask.request.form.get('token') != config.get('outgoing', 'token'):
         return ('', 400)
 
-    text = OutgoingHandler(flask.request.form.to_dict()).handle()
-    if text:
-        return flask.jsonify(**makebody(text))
+    obj = EventHandler(flask.request.form.to_dict()).handle()
+
+    if obj.body:
+        return flask.jsonify(**obj.body)
 
     return ('', 204)
 
 
-def post(text):
+def post(body):
     url = config.get('incoming', 'url')
     if not url:
         logging.error('[post] no incoming url specified')
@@ -45,73 +46,90 @@ def post(text):
         ctx = ssl._create_unverified_context()
 
     try:
-        body = urllib.urlencode({'payload': json.dumps(makebody(text))})
+        body = urllib.urlencode({'payload': json.dumps(body)})
         req = urllib2.Request(url, body)
         urllib2.urlopen(req, context=ctx).read()
     except:
         logging.exception('[post] %s', locals())
 
 
-def makebody(text):
-    try:
-        icon_url = random.choice(config.getlist('mm', 'icon_url'))
-    except IndexError:
-        icon_url = u''
+class EventHandler(object):
+    def __init__(self, data):
+        self.data = data
+        self.body = {}
 
-    return {
-        'text':     text,
-        'username': config.get('mm', 'username'),
-        'icon_url': icon_url,
-    }
-
-
-class OutgoingHandler(object):
-    def __init__(self, data=None):
-        self.data = data if data is not None else {}
-
-    @util.join(sep='\n')
     def handle(self):
         for action in config.getlist('mm', 'actions'):
             sect = ':'.join(('action', action))
             if not self.enabled(sect):
                 continue
 
-            text = self.action(sect)
-            if text is not None:
-                yield text
-
-            if not config.getboolean(sect, 'fallthrough'):
+            fallthrough = config.getboolean(sect, 'fallthrough')
+            result = self.action(sect)
+            if (not fallthrough) and (result is not None):
                 break
+
+        return self
 
     def action(self, sect):
         action = config.get(sect, 'action')
         if not action:
             logging.error('[action] [%s] no action specified', sect)
-            return
+            return None
 
         try:
             func = mmplugin.getaction(action)
+
             conf = config.as_dict(sect)
             conf.setdefault('section', sect)
 
-            text = func(self, conf)
+            result = func(self, conf)
+            self.update(conf, result)
 
-            if text:
-                return text
-
-            return self.format(sect)
+            return result
 
         except:
             logging.exception('[%s] <%s.%s> %s', sect,
                               func.__module__, func.__name__, self.data)
 
-    def format(self, sect):
-        fmt = config.get(sect, 'text')
-        if not fmt:
+        return None
+
+    def update(self, conf, result):
+        def get_icon_url():
+            icon_url_global = config.getlist('mm', 'icon_url')
+            icon_url_local = util.split(conf.get('icon_url', ''))
+
+            if icon_url_local:
+                return random.choice(icon_url_local)
+
+            if icon_url_global:
+                return random.choice(icon_url_global)
+
+            return ''
+
+        def get_username():
+            return conf.get('username', config.get('mm', 'username'))
+
+        def get_text():
+            fmt = conf.get('text', '')
+            fmt = fmt.encode('raw_unicode_escape').decode('unicode_escape')
+            return fmt % self.data
+
+        if result is None:
             return
 
-        fmt = fmt.encode('raw_unicode_escape').decode('unicode_escape')
-        return fmt % self.data
+        self.body.update(result)
+
+        if 'text' not in self.body:
+            text = get_text()
+            if text:
+                self.body['text'] = text
+
+        if 'text' in self.body:
+            if 'username' not in self.body:
+                self.body['username'] = get_username()
+            if 'icon_url' not in self.body:
+                self.body['icon_url'] = get_icon_url()
 
     def enabled(self, sect):
         if not config.has_section(sect):
@@ -211,13 +229,14 @@ class Scheduler(threading.Thread):
         if self.state[name]['time'] + interval > now:
             return
 
-        obj = OutgoingHandler()
+        obj = EventHandler({})
         if not obj.enabled(actsect):
             return
 
-        text = obj.action(actsect)
-        if text:
-            post(text)
+        obj.action(actsect)
+
+        if obj.body:
+            post(obj.body)
 
         self.state[name]['time'] = now
 
@@ -251,7 +270,7 @@ def main():
         ap.add_argument('-l', '--logging-config', type=util.abspath,
                         help='configuration file for the logging')
         ap.add_argument('config', type=util.abspath,
-                        help='configuration file for the API server')
+                        help='configuration file for the Mattermost client')
         return ap.parse_args()
 
     args = parseargs()

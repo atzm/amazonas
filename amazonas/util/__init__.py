@@ -6,14 +6,13 @@ import os
 import sys
 import shlex
 import datetime
-import functools
 import cStringIO
 
 from . import http
 from . import jlyrics
 
 __all__ = ['http', 'jlyrics', 'abspath', 'daemonize',
-           'join', 'split', 'time_in', 'formathelp']
+           'split', 'time_in', 'formathelp']
 
 
 def abspath(path):
@@ -40,15 +39,6 @@ def daemonize(chdir='/', close=True):
         sys.__stdin__ = sys.stdin = open(os.devnull)
         sys.__stdout__ = sys.stdout = open(os.devnull, 'w')
         sys.__stderr__ = sys.stderr = open(os.devnull, 'w')
-
-
-def join(sep=''):
-    def _(func):
-        @functools.wraps(func)
-        def __(*args, **kwargs):
-            return sep.join(func(*args, **kwargs))
-        return __
-    return _
 
 
 def split(data):
