@@ -90,12 +90,42 @@ class Juman(parser.Parser):
                 if not line or line == 'EOS':
                     break
 
-                idx = 0
                 words = []
-                for x in xrange(3):
-                    idx = line[1:].index(' ') + 2
-                    words.append(line[:idx - 1])
-                    line = line[idx:]
+
+                # maybe ' \'
+                if line.startswith(r'\ \ \ \ \ \ ') and self.jumanpp:
+                    words.extend([' \\'] * 3)
+                    line = line[12:]
+
+                # maybe ' '
+                elif line.startswith(r'  \  \  ') and not self.jumanpp:
+                    words.extend([' '] * 3)
+                    line = line[8:]
+
+                # maybe '\'
+                elif line.startswith(r'\ \ \ '):
+                    words.extend(['\\'] * 3)
+                    line = line[6:]
+
+                else:
+                    tokens = []
+                    escape = False
+                    n = 0
+
+                    while len(words) < 3:
+                        if line[n] == '\\' and not escape:
+                            escape = True
+                        elif line[n] == ' ' and not escape:
+                            escape = False
+                            words.append(''.join(tokens))
+                            tokens = []
+                        else:
+                            escape = False
+                            tokens.append(line[n])
+
+                        n += 1
+
+                    line = line[n:]
 
                 info = util.split(line)
 
