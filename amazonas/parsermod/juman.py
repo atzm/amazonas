@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os.path
 import subprocess
 
 from .. import util
@@ -40,6 +41,7 @@ class Juman(parser.Parser):
         self.path = path
         self.args = str(args).split()
         self.encode = encode
+        self.jumanpp = os.path.basename(path) == 'jumanpp'
         self.proc = None
         self.size = 0
 
@@ -71,6 +73,9 @@ class Juman(parser.Parser):
         for text in text.splitlines():
             # unicode.strip/split treats wide space as delimiter by default.
             text = text.strip('\t\r\n') + '\n'
+            if self.jumanpp and text.startswith('#'):
+                continue
+
             encoded_text = text.encode(self.encode)
             if len(encoded_text) > self.PIPE_BUF:
                 continue
