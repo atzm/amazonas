@@ -199,8 +199,13 @@ class IRCBot(irc.bot.SingleServerIRCBot):
     def do_action(self, sect, conn, event, data, sched=None):
         if not self.action_active:
             return True
-        if sched and not self.isenabled(sched):
-            return False
+        if sched:
+            if not self.isenabled(sched):
+                return False
+            data.update({
+                'nick0': self.connection.get_nickname(),
+                'nick1': self.random_user(self.connection.get_nickname()),
+            })
         if not self.isenabled(sect, data):
             return False
 
