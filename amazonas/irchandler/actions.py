@@ -40,6 +40,11 @@ def random_(ircbot, conf, conn, event, data):
     return None
 
 
+@ircplugin.action('register')
+def register(ircbot, conf, conn, event, data):
+    return {conf['register_key'] % data: conf['register_value'] % data}
+
+
 @ircplugin.action('replace')
 def replace(ircbot, conf, conn, event, data):
     if 'message' not in data:
