@@ -227,6 +227,11 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             data.update(result)
             self.send_message(conn, sect, data)
 
+        chain = config.get(sect, 'chain')
+        chain_sect = ':'.join(('action', chain))
+        if chain and config.has_section(chain_sect):
+            return self.do_action(chain_sect, conn, event, data, sched)
+
         return True
 
     def register_schedule(self):

@@ -152,6 +152,13 @@ enable      = true
 action      = null
 fallthrough = false
 message     = 大凶
+chain       = omikuji2-1
+
+[action:omikuji2-1]
+enable      = true
+action      = null
+fallthrough = false
+message     = 「おおめでたい」という意味です
 
 [schedule:myschedule]
 enable   = true
