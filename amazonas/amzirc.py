@@ -308,6 +308,8 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             f = message.encode('raw_unicode_escape').decode('unicode_escape')
             for line in (f % data).splitlines():
                 conn.notice(data['target'], line)
+                logging.info('[%s] [%s] %s> %s', sect, data['target'],
+                             conn.get_nickname(), line)
 
     @staticmethod
     def isenabled(sect, data={}):
