@@ -107,6 +107,17 @@ port        = 8349
 nr_retry    = 2
 locale      = ja
 
+[action:mygenerate]
+enable      = true
+pattern     = 今日の一言
+action      = generate
+fallthrough = false
+message     = 天の声が聞こえます……『%(text)s』と。
+server      = 127.0.0.1
+port        = 8349
+nr_retry    = 2
+instance    = first
+
 [action:mytalk]
 enable      = true
 pattern     = amazonas

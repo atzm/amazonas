@@ -83,18 +83,55 @@ def learn(ircbot, conf, conn, event, data):
     return None
 
 
-@ircplugin.action('talk')
-def talk(ircbot, conf, conn, event, data):
+def _generate(action, ircbot, conf, conn, event, data):
+    method = conf.get('method', 'line')
+    if method not in ['line', 'raw']:
+        logging.error('[%s] unknown method: %s', action, method)
+        return None
+
     client = util.http.APIClientV01(conf['server'], conf['port'])
     score, text = client.generate(conf['instance'],
                                   int(conf.get('nr_retry', 0)))
     if None in (score, text):
-        logging.warn('[talk] failed to generate text')
+        logging.warn('[%s] failed to generate text', action)
         return None
 
-    for line in text.splitlines():
-        if not line:
-            continue
+    return {
+        'raw':       text,
+        'line':      [line for line in text.splitlines() if line],
+        'method':    method,
+        'registers': util.split(conf.get('registers', 'text')),
+    }
+
+
+@ircplugin.action('generate')
+def generate(ircbot, conf, conn, event, data):
+    generated = _generate('generate', ircbot, conf, conn, event, data)
+    if not generated:
+        return None
+
+    result = {}
+
+    if generated['method'] == 'line':
+        for i, reg in enumerate(generated['registers']):
+            try:
+                result[reg] = generated['line'][i]
+            except IndexError:
+                result[reg] = ''
+
+    elif generated['method'] == 'raw':
+        result[generated['registers'][0]] = generated['raw']
+
+    return result
+
+
+@ircplugin.action('talk')
+def talk(ircbot, conf, conn, event, data):
+    generated = _generate('talk', ircbot, conf, conn, event, data)
+    if not generated:
+        return None
+
+    for line in generated['line']:
         conn.notice(data['target'], line)
         logging.info('[talk] [%s] %s> %s',
                      data['target'], conn.get_nickname(), line)
