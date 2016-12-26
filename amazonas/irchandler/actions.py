@@ -4,6 +4,7 @@ import re
 import time
 import random
 import logging
+import itertools
 
 from .. import util
 from .. import ircplugin
@@ -141,6 +142,16 @@ def talk(ircbot, conf, conn, event, data):
 
 @ircplugin.action('suggest')
 def suggest(ircbot, conf, conn, event, data):
+    method = conf.get('method', 'line')
+    if method not in ['line', 'word']:
+        logging.error('[suggest] unknown method: %s', method)
+        return None
+
+    mapping = conf.get('mapping', 'random')
+    if mapping not in ['random', 'sequential']:
+        logging.error('[suggest] unknown mapping: %s', mapping)
+        return None
+
     nr_retry = int(conf.get('nr_retry', 0))
     client = util.http.APIClientV01(conf['server'], conf['port'])
     keys = client.recent_entries(conf['instance'], nr_retry)
@@ -150,12 +161,26 @@ def suggest(ircbot, conf, conn, event, data):
 
     key = random.choice(keys)
     gclient = util.http.GoogleClient()
-    result = gclient.complete(key, conf.get('locale', 'en'), nr_retry)
-    if not result:
+    suggested = gclient.complete(key, conf.get('locale', 'en'), nr_retry)
+    if not suggested:
         logging.warn('[suggest] failed to complete with "%s"', key)
         return None
 
-    return {'suggested': random.choice(result)}
+    if method == 'word':
+        suggested = \
+            list(itertools.chain.from_iterable(s.split() for s in suggested))
+
+    if mapping == 'random':
+        random.shuffle(suggested)
+
+    result = {}
+    for i, reg in enumerate(util.split(conf.get('registers', 'suggested'))):
+        try:
+            result[reg] = suggested[i]
+        except IndexError:
+            result[reg] = ''
+
+    return result
 
 
 @ircplugin.action('html')
