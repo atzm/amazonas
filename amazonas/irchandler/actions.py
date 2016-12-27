@@ -43,7 +43,7 @@ def random_(ircbot, conf, conn, event, data):
 
 @ircplugin.action('register')
 def register(ircbot, conf, conn, event, data):
-    return {conf['register_key'] % data: conf['register_value'] % data}
+    return {conf['register'] % data: conf['value'] % data}
 
 
 @ircplugin.action('replace')

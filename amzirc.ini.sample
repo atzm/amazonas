@@ -169,12 +169,12 @@ message     = 大凶
 chain       = omikuji2-1
 
 [action:omikuji2-1]
-enable         = true
-action         = register
-fallthrough    = false
-register_key   = iiwake
-register_value = %(source)s さん、「おおめでたい」という意味ですよ
-chain          = omikuji2-2
+enable      = true
+action      = register
+fallthrough = false
+register    = iiwake
+value       = %(source)s さん、「おおめでたい」という意味ですよ
+chain       = omikuji2-2
 
 [action:omikuji2-2]
 enable      = true
