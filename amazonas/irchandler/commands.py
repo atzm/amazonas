@@ -23,7 +23,12 @@ def help(ircbot, conn, event, data, *args):
         cmdlist.append((name, command))
 
     for line in util.formathelp(cmdlist).splitlines():
-        conn.notice(data['target'], line.rstrip())
+        line = line.rstrip()
+        if not line:
+            continue
+        conn.notice(data['target'], line)
+        logging.info('[help] [%s] %s> %s', data['target'],
+                     conn.get_nickname(), line)
 
     return {}
 
@@ -33,7 +38,10 @@ def version(ircbot, conn, event, data, *args):
     '''(no arguments required)
     Display version information.
     '''
-    conn.notice(data['target'], 'amazonas/0.0.1')
+    line = 'amazonas/0.0.1'
+    conn.notice(data['target'], line)
+    logging.info('[version] [%s] %s> %s', data['target'],
+                 conn.get_nickname(), line)
     return {}
 
 
@@ -84,6 +92,8 @@ def suggest(ircbot, conn, event, data, *args):
     result = gclient.complete(' '.join(args), locale, nr_retry)
     if not result:
         conn.notice(data['target'], notfound)
+        logging.info('[suggest] [%s] %s> %s', data['target'],
+                     conn.get_nickname(), notfound)
         return None
 
     if randomize:
@@ -91,5 +101,7 @@ def suggest(ircbot, conn, event, data, *args):
 
     for text in result[:limit]:
         conn.notice(data['target'], text)
+        logging.info('[suggest] [%s] %s> %s', data['target'],
+                     conn.get_nickname(), text)
 
     return {}
