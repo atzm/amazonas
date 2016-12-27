@@ -94,7 +94,7 @@ def _generate(ircbot, conf, conn, event, data):
         return None
 
     client = util.http.APIClientV01(conf['server'], conf['port'])
-    score, text = client.generate(conf['instance'],
+    score, text = client.generate(conf['instance'], None,
                                   int(conf.get('nr_retry', 0)))
     if None in (score, text):
         logging.warn('[%s] failed to generate text', action)

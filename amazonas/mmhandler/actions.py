@@ -79,7 +79,7 @@ def learn(obj, conf):
 @mmplugin.action('talk')
 def talk(obj, conf):
     client = util.http.APIClientV01(conf['server'], conf['port'])
-    score, text = client.generate(conf['instance'],
+    score, text = client.generate(conf['instance'], None,
                                   int(conf.get('nr_retry', 0)))
     if None in (score, text):
         logging.warn('[talk] failed to generate text')
