@@ -102,10 +102,20 @@ class ConsoleCommand(Command):
         self.client = util.http.APIClientV01(host, port)
 
     def cmd_print(self, *args):
-        '''(no arguments required)
+        '''[-e <entrypoint>]
         Generate a text and display it / its score.
         '''
-        score, text = self.client.generate(self.instance)
+        try:
+            opts, args = getopt.gnu_getopt(args, 'e:')
+        except getopt.error:
+            return self.printhelp()
+
+        entrypoint = None
+        for opt, optarg in opts:
+            if opt == '-e':
+                entrypoint = optarg
+
+        score, text = self.client.generate(self.instance, entrypoint)
         if None not in (score, text):
             self.print('%s [%f]' % (text, score))
         else:

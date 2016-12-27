@@ -20,7 +20,7 @@ def root(inst):
     inst = getinstance(inst)
 
     if flask.request.method == 'GET':
-        text, sc = inst.run()
+        text, sc = inst.run(flask.request.args.get('entrypoint'))
         if text is not None and sc is not None:
             return flask.jsonify(text=text, score=sc)
         return flask.Response(status=204)

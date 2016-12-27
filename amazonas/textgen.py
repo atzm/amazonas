@@ -142,15 +142,17 @@ class TextGenerator(object):
             self.update_score_threshold(self.score(wordclass))
             self.wordclass.append(wordclass)
 
-    def run(self):
+    def run(self, entrypoint=None):
         for x in xrange(self.nr_retry):
-            try:
-                entrypoint = random.choice(self.entrypoint)
-            except IndexError:
-                entrypoint = None
+            if entrypoint:
+                ep = entrypoint
+            elif self.entrypoint:
+                ep = random.choice(self.entrypoint)
+            else:
+                ep = None
 
             try:
-                text = ''.join(self.markov.run(entrypoint)).strip()
+                text = ''.join(self.markov.run(ep)).strip()
             except:
                 logging.exception('failed to generate a text (%d)', x)
                 continue

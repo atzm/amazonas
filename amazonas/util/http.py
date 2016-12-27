@@ -170,7 +170,8 @@ class APIClientV01(HTTPClient):
 
         return False
 
-    def generate(self, instance, nr_retry=0, retry_interval=0.2):
+    def generate(self, instance, entrypoint=None,
+                 nr_retry=0, retry_interval=0.2):
         def isvalid(code, body):
             if code != 200:
                 return False
@@ -187,8 +188,9 @@ class APIClientV01(HTTPClient):
             return True
 
         path = '/'.join((self.PATH_PREFIX, instance))
+        query = {'entrypoint': entrypoint} if entrypoint else {}
         for x in xrange(nr_retry + 1):
-            code, body = self.get(path)
+            code, body = self.get(path, **query)
 
             if isvalid(code, body):
                 return body['score'], body['text']
