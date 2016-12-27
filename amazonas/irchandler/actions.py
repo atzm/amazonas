@@ -93,8 +93,13 @@ def _generate(ircbot, conf, conn, event, data):
         logging.error('[%s] unknown method: %s', action, method)
         return None
 
+    if conf.get('entrypoint', 'false').lower() == 'true':
+        entrypoint = data.get('entrypoint')
+    else:
+        entrypoint = None
+
     client = util.http.APIClientV01(conf['server'], conf['port'])
-    score, text = client.generate(conf['instance'], None,
+    score, text = client.generate(conf['instance'], entrypoint,
                                   int(conf.get('nr_retry', 0)))
     if None in (score, text):
         logging.warn('[%s] failed to generate text', action)
