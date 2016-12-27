@@ -4,6 +4,7 @@ import re
 import time
 import random
 import logging
+import inspect
 import itertools
 
 from .. import util
@@ -84,7 +85,9 @@ def learn(ircbot, conf, conn, event, data):
     return None
 
 
-def _generate(action, ircbot, conf, conn, event, data):
+def _generate(ircbot, conf, conn, event, data):
+    action = inspect.currentframe().f_back.f_code.co_name
+
     method = conf.get('method', 'line')
     if method not in ['line', 'raw']:
         logging.error('[%s] unknown method: %s', action, method)
@@ -107,7 +110,7 @@ def _generate(action, ircbot, conf, conn, event, data):
 
 @ircplugin.action('generate')
 def generate(ircbot, conf, conn, event, data):
-    generated = _generate('generate', ircbot, conf, conn, event, data)
+    generated = _generate(ircbot, conf, conn, event, data)
     if not generated:
         return None
 
@@ -128,7 +131,7 @@ def generate(ircbot, conf, conn, event, data):
 
 @ircplugin.action('talk')
 def talk(ircbot, conf, conn, event, data):
-    generated = _generate('talk', ircbot, conf, conn, event, data)
+    generated = _generate(ircbot, conf, conn, event, data)
     if not generated:
         return None
 
