@@ -82,8 +82,8 @@ class HTTPClient(object):
     def _request(self, method, url, body, headers={}):
         req = urllib2.Request(url, body, headers)
         req.get_method = lambda: str(method)
-        obj = urllib2.urlopen(req)
-        return obj.getcode(), obj.info(), obj.read()
+        with closing(urllib2.urlopen(req)) as f:
+            return f.getcode(), f.info(), f.read()
 
     def _parsebody(self, strhdr, body):
         message = email.message_from_string(strhdr)
