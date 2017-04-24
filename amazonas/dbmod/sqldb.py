@@ -60,7 +60,8 @@ class MarkovSQL(db.Database):
         self.current_session = None
         self.Engine = create_engine(url, encoding='utf-8', echo=echo, **kw)
         self.Session = sessionmaker(bind=self.Engine)
-        Base.metadata.create_all(self.Engine)
+        Base.metadata.create_all(self.Engine, [self.TABLE_KEY.__table__,
+                                               self.TABLE_VALUE.__table__])
 
     @contextlib.contextmanager
     def transaction(self):
