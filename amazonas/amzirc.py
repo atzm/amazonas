@@ -6,6 +6,7 @@ import signal
 import logging
 import logging.config
 import argparse
+import functools
 import contextlib
 
 import irc.bot
@@ -57,28 +58,28 @@ class ServerConnection(irc.client.ServerConnection):
 
 
 class Reactor(irc.client.Reactor):
+    def __init__(self, *args, **kwargs):
+        super(Reactor, self).__init__(*args, **kwargs)
+
+        if hasattr(self, 'scheduler'):
+            self.delayed_commands = self.scheduler.queue
+
+    @staticmethod
+    def cmdattrs(cmd):
+        if hasattr(cmd, 'target'):
+            return cmd.delay, cmd.target
+        return cmd.delay, cmd.function.func
+
     def server(self):
         c = ServerConnection(self)
         with self.mutex:
             self.connections.append(c)
         return c
 
-    def unregister_delayed(self, delay, func, args):
-        def match(cmd, _delay, _func, _args):
-            return isinstance(cmd, irc.schedule.DelayedCommand) and \
-                _delay == delay and _func == func and _args == args
-        return self.unregister_schedule(match)
-
-    def unregister_every(self, delay, func, args):
-        def match(cmd, _delay, _func, _args):
-            return isinstance(cmd, irc.schedule.PeriodicCommand) and \
-                _delay == delay and _func == func and _args == args
-        return self.unregister_schedule(match)
-
     def unregister_schedule(self, match):
         def index():
             for i, cmd in enumerate(self.delayed_commands):
-                if match(cmd, cmd.delay, cmd.function.func, cmd.function.args):
+                if match(cmd):
                     return i
             return -1
 
@@ -88,9 +89,7 @@ class Reactor(irc.client.Reactor):
             while True:
                 idx = index()
                 if idx >= 0:
-                    cmd = self.delayed_commands.pop(idx)
-                    removed.append((cmd.delay,
-                                    cmd.function.func, cmd.function.args))
+                    removed.append(self.delayed_commands.pop(idx))
                 else:
                     break
 
@@ -260,17 +259,19 @@ class IRCBot(irc.bot.SingleServerIRCBot):
                 logging.error('[schedule] [%s] interval too short', sect)
                 continue
 
-            self.reactor.execute_every(interval, self.do_action,
-                                       (action, self.connection, None,
-                                        {'target': channel}, sect))
+            func = functools.partial(self.do_action, action, self.connection,
+                                     None, {'target': channel}, sect)
+            scheduler = getattr(self.reactor, 'scheduler', self.reactor)
+            scheduler.execute_every(interval, func)
             logging.info('[schedule] [%s] registered', sect)
 
     def unregister_schedule(self):
-        def match(cmd, delay, func, args):
-            return func == self.do_action
+        def match(cmd):
+            return self.reactor.cmdattrs(cmd)[1].func == self.do_action
 
-        for delay, func, args in self.reactor.unregister_schedule(match):
-            logging.info('[schedule] [%s] unregistered', args[4])
+        for cmd in self.reactor.unregister_schedule(match):
+            logging.info('[schedule] [%s] unregistered',
+                         self.reactor.cmdattrs(cmd)[1].args[4])
 
     def random_user(self, default):
         try:

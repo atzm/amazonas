@@ -21,7 +21,7 @@ setup(
     platforms=['Linux'],
     install_requires=[
         'flask>=0.10.1',
-        'irc>=8.9.1,<=11.0.1',
+        'irc>=8.9.1,<=15.0.6',
         'lxml>=3.3.5',
     ],
     classifiers=[
