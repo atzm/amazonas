@@ -58,38 +58,40 @@ class ServerConnection(irc.client.ServerConnection):
 
 
 class Reactor(irc.client.Reactor):
-    def __init__(self, *args, **kwargs):
-        super(Reactor, self).__init__(*args, **kwargs)
-
-        if hasattr(self, 'scheduler'):
-            self.delayed_commands = self.scheduler.queue
-
-    @staticmethod
-    def cmdattrs(cmd):
-        if hasattr(cmd, 'target'):
-            return cmd.delay, cmd.target
-        return cmd.delay, cmd.function.func
-
     def server(self):
         c = ServerConnection(self)
         with self.mutex:
             self.connections.append(c)
         return c
 
+    def register_schedule(self, interval, func, *args, **kwargs):
+        partial = functools.partial(func, *args, **kwargs)
+        getattr(self, 'scheduler', self).execute_every(interval, partial)
+
     def unregister_schedule(self, match):
-        def index():
-            for i, cmd in enumerate(self.delayed_commands):
-                if match(cmd):
-                    return i
-            return -1
+        if hasattr(self, 'scheduler'):
+            queue = self.scheduler.queue
+        else:
+            queue = self.delayed_commands
 
         removed = []
+
+        def func(cmd):
+            if hasattr(cmd, 'target'):
+                return cmd.target
+            return cmd.function.func
+
+        def index():
+            for i, cmd in enumerate(queue):
+                if match(func(cmd)):
+                    return i
+            return -1
 
         with self.mutex:
             while True:
                 idx = index()
                 if idx >= 0:
-                    removed.append(self.delayed_commands.pop(idx))
+                    removed.append(func(queue.pop(idx)))
                 else:
                     break
 
@@ -259,19 +261,17 @@ class IRCBot(irc.bot.SingleServerIRCBot):
                 logging.error('[schedule] [%s] interval too short', sect)
                 continue
 
-            func = functools.partial(self.do_action, action, self.connection,
-                                     None, {'target': channel}, sect)
-            scheduler = getattr(self.reactor, 'scheduler', self.reactor)
-            scheduler.execute_every(interval, func)
+            self.reactor.register_schedule(interval, self.do_action,
+                                           action, self.connection,
+                                           None, {'target': channel}, sect)
             logging.info('[schedule] [%s] registered', sect)
 
     def unregister_schedule(self):
-        def match(cmd):
-            return self.reactor.cmdattrs(cmd)[1].func == self.do_action
+        def match(func):
+            return func.func == self.do_action
 
-        for cmd in self.reactor.unregister_schedule(match):
-            logging.info('[schedule] [%s] unregistered',
-                         self.reactor.cmdattrs(cmd)[1].args[4])
+        for func in self.reactor.unregister_schedule(match):
+            logging.info('[schedule] [%s] unregistered', func.args[4])
 
     def random_user(self, default):
         try:
