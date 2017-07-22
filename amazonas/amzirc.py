@@ -83,7 +83,10 @@ class Reactor(irc.client.Reactor):
 
         def index():
             for i, cmd in enumerate(queue):
-                if match(func(cmd)):
+                f = func(cmd)
+                if not isinstance(f, functools.partial):
+                    continue
+                if match(f):
                     return i
             return -1
 
