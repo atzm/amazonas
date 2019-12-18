@@ -3,11 +3,20 @@
 import time
 import json
 import email
-import urllib
-import urllib2
+import contextlib
 
-from contextlib import closing
+from . import compat
+
+import six
+
 from lxml import html
+from six.moves import urllib, range
+
+
+def getmessage(info):
+    if hasattr(info, 'get_content_type'):
+        return info
+    return email.message_from_string(''.join(info.headers))
 
 
 class HTML(object):
@@ -17,24 +26,23 @@ class HTML(object):
         self.content = None
 
     @staticmethod
-    def getparser(headers):
-        for p in headers.getplist():
-            if p.lower().startswith('charset='):
-                return html.HTMLParser(encoding=p.split('=')[1])
-        return html.HTMLParser()
+    def getparser(f):
+        msg = getmessage(f.info())
+        encoding = msg.get_content_charset() or None
+        return html.HTMLParser(encoding=encoding)
 
     @property
     def root(self):
         if not self.content:
-            with closing(urllib2.urlopen(self.url, timeout=self.timeout)) as f:
-                self.content = html.parse(f, self.getparser(f.headers))
+            with contextlib.closing(urllib.request.urlopen(self.url, timeout=self.timeout)) as f:  # noqa: E501
+                self.content = html.parse(f, self.getparser(f))
         return self.content.getroot()
 
     def getcontent(self, xpath):
         try:
             p = self.root.xpath(xpath)[0]
             return dict(text_content=p.text_content().strip(), **p.attrib)
-        except:
+        except Exception:
             return {}
 
 
@@ -75,21 +83,20 @@ class HTTPClient(object):
         try:
             url = self.url(path, query)
             code, info, body = self._request(method, url, body, headers)
-            return code, self._parsebody(''.join(info.headers), body)
-        except urllib2.HTTPError as e:
+            return code, self._parsebody(getmessage(info), body)
+        except urllib.error.HTTPError as e:
             return e.getcode(), ''
 
     def _request(self, method, url, body, headers={}):
-        req = urllib2.Request(url, body, headers)
+        req = urllib.request.Request(url, body, headers)
         req.get_method = lambda: str(method)
-        with closing(urllib2.urlopen(req)) as f:
+        with contextlib.closing(urllib.request.urlopen(req)) as f:
             return f.getcode(), f.info(), f.read()
 
-    def _parsebody(self, strhdr, body):
-        message = email.message_from_string(strhdr)
-        ctype = message.get_content_type()
-        charset = message.get_content_charset() or self.charset
-        body = unicode(body, charset, 'replace')
+    def _parsebody(self, msg, body):
+        ctype = msg.get_content_type()
+        charset = msg.get_content_charset() or self.charset
+        body = compat.ucode(body, charset, 'replace')
         return self.get_content_handler(ctype)(body)
 
     def url(self, path, query={}):
@@ -112,13 +119,13 @@ class HTTPClient(object):
 
     def querystring(self, query):
         q = {}
-        for k, v in query.iteritems():
-            if type(k) == unicode:
+        for k, v in six.iteritems(query):
+            if six.PY2 and compat.isucode(k):
                 k = k.encode(self.charset)
-            if type(v) == unicode:
+            if six.PY2 and compat.isucode(v):
                 v = v.encode(self.charset)
             q[k] = v
-        return urllib.urlencode(q)
+        return urllib.parse.urlencode(q)
 
 
 class GoogleClient(HTTPClient):
@@ -138,7 +145,7 @@ class GoogleClient(HTTPClient):
                 return False
             return True
 
-        for x in xrange(nr_retry + 1):
+        for x in range(nr_retry + 1):
             code, body = self.get('/complete/search',
                                   client='firefox', hl=locale, q=query)
 
@@ -160,7 +167,7 @@ class APIClientV01(HTTPClient):
             return True
 
         path = '/'.join((self.PATH_PREFIX, instance))
-        for x in xrange(nr_retry + 1):
+        for x in range(nr_retry + 1):
             code, body = self.put(path, {'text': lines})
 
             if isvalid(code, body):
@@ -181,15 +188,15 @@ class APIClientV01(HTTPClient):
                 return False
             if 'score' not in body:
                 return False
-            if type(body['text']) is not unicode:
+            if not compat.isucode(body['text']):
                 return False
-            if not isinstance(body['score'], (int, long, float)):
+            if not compat.isnum(body['score']):
                 return False
             return True
 
         path = '/'.join((self.PATH_PREFIX, instance))
         query = {'entrypoint': entrypoint} if entrypoint else {}
-        for x in xrange(nr_retry + 1):
+        for x in range(nr_retry + 1):
             code, body = self.get(path, **query)
 
             if isvalid(code, body):
@@ -212,7 +219,7 @@ class APIClientV01(HTTPClient):
             return True
 
         path = '/'.join((self.PATH_PREFIX, instance, 'entrypoints'))
-        for x in xrange(nr_retry + 1):
+        for x in range(nr_retry + 1):
             code, body = self.get(path)
 
             if isvalid(code, body):
@@ -235,7 +242,7 @@ class APIClientV01(HTTPClient):
             return True
 
         path = '/'.join((self.PATH_PREFIX, instance, 'recent-entrypoints'))
-        for x in xrange(nr_retry + 1):
+        for x in range(nr_retry + 1):
             code, body = self.get(path)
 
             if isvalid(code, body):
@@ -258,7 +265,7 @@ class APIClientV01(HTTPClient):
             return True
 
         path = '/'.join((self.PATH_PREFIX, instance, 'keys'))
-        for x in xrange(nr_retry + 1):
+        for x in range(nr_retry + 1):
             code, body = self.get(path)
 
             if isvalid(code, body):
@@ -281,9 +288,9 @@ class APIClientV01(HTTPClient):
             return True
 
         keys = json.dumps(keys, ensure_ascii=False).encode('utf-8')
-        keys = urllib.quote(keys, safe='')
+        keys = urllib.parse.quote(keys, safe='')
         path = '/'.join((self.PATH_PREFIX, instance, 'keys', keys))
-        for x in xrange(nr_retry + 1):
+        for x in range(nr_retry + 1):
             code, body = self.get(path)
 
             if isvalid(code, body):
@@ -306,7 +313,7 @@ class APIClientV01(HTTPClient):
             return True
 
         path = '/'.join((self.PATH_PREFIX, instance, 'histories'))
-        for x in xrange(nr_retry + 1):
+        for x in range(nr_retry + 1):
             code, body = self.get(path)
 
             if isvalid(code, body):
@@ -325,12 +332,12 @@ class APIClientV01(HTTPClient):
             for x in ('threshold', 'maxchain', 'keys', 'entrypoints'):
                 if x not in body:
                     return False
-                if not isinstance(body[x], (int, long, float)):
+                if not compat.isnum(body[x]):
                     return False
             return True
 
         path = '/'.join((self.PATH_PREFIX, instance, 'stats'))
-        for x in xrange(nr_retry + 1):
+        for x in range(nr_retry + 1):
             code, body = self.get(path)
 
             if isvalid(code, body):

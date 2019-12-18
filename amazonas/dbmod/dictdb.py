@@ -29,13 +29,13 @@ class Dict(db.Database):
     def getrand(self, key):
         try:
             return random.choice(self.table[self.serialize(key)])
-        except:
+        except Exception:
             return None
 
     def getrandall(self):
         try:
-            return random.choice(random.choice(self.table.values()))
-        except:
+            return random.choice(random.choice(list(self.table.values())))
+        except Exception:
             return None
 
     def keys(self):
@@ -51,7 +51,7 @@ class Dict(db.Database):
             return
 
         try:
-            with open(self.path) as fp:
+            with codecs.open(self.path, encoding='utf-8') as fp:
                 fcntl.flock(fp.fileno(), fcntl.LOCK_SH)
                 self.table = json.load(fp)
         except IOError as e:

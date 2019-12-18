@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import MeCab
+from .. import util, parser
 
-from .. import parser
+import six
+import MeCab
 
 
 @parser.parserclass(parser.PARSERTYPE_MORPH)
@@ -11,8 +12,8 @@ class Mecab(parser.Parser):
         u'連体詞':   ('*',),
         u'接頭詞':   (u'形容詞接続', u'数接続', u'動詞接続', u'名詞接続'),
         u'名詞':     (u'引用文字列', u'サ変接続', u'ナイ形容詞語幹',
-                      u'形容動詞語幹', u'動詞非自立的', u'副詞可能',
-                      u'一般', u'数', u'固有名詞', u'代名詞'),
+                      u'形容動詞語幹', u'動詞非自立的', u'副詞可能',  # noqa: E128
+                      u'一般', u'数', u'固有名詞', u'代名詞'),        # noqa: E128
         u'動詞':     (u'自立',),
         u'形容詞':   (u'自立',),
         u'副詞':     (u'一般', u'助詞類接続'),
@@ -61,14 +62,16 @@ class Mecab(parser.Parser):
         return True
 
     def parse(self, text):
+        result = []
         tagger = MeCab.Tagger(self.args)
         encode = tagger.dictionary_info().charset
 
         for text in text.splitlines():
-            # MeCab.Tagger.parse only accepts encoded text.
+            # MeCab.Tagger.parse only accepts encoded text in python2,
+            # but only accepts unicode text in python3.
             # unicode.strip/split treats wide space as delimiter by default.
-            encoded_text = text.strip('\t\r\n').encode(encode)
-            parsed_text = unicode(tagger.parse(encoded_text), encode)
+            text = text.strip('\t\r\n')
+            parsed_text = self._parse(tagger, text, encode)
 
             for line in parsed_text.splitlines():
                 line = line.strip('\t\r\n')
@@ -77,10 +80,16 @@ class Mecab(parser.Parser):
                     break
                 try:
                     word, info = line.split('\t', 1)
-                    yield word, info.strip(' \t\r\n').split(',')
-                except:
+                    result.append([word, info.strip(' \t\r\n').split(',')])
+                except Exception:
                     pass
 
             # pseudo word class for multi-line text generation
-            yield '\n', [u'記号', u'改行', '*',  '*', '*', '*',
-                         '\n', '\n', '\n']
+            result.append(['\n', [u'記号', u'改行', '*',  '*', '*', '*',
+                                  '\n', '\n', '\n']])
+
+        return result
+
+    def _parse(self, tagger, text, encode):
+        t = text.encode(encode) if six.PY2 else text
+        return util.compat.ucode(tagger.parse(t), encode)

@@ -6,13 +6,22 @@ import os
 import sys
 import shlex
 import datetime
-import cStringIO
 
 from . import http
 from . import jlyrics
 
-__all__ = ['http', 'jlyrics', 'abspath', 'daemonize',
-           'split', 'time_in', 'formathelp']
+import six
+
+__all__ = [
+    'compat',
+    'http',
+    'jlyrics',
+    'abspath',
+    'daemonize',
+    'split',
+    'time_in',
+    'formathelp',
+]
 
 
 def abspath(path):
@@ -41,9 +50,11 @@ def daemonize(chdir='/', close=True):
         sys.__stderr__ = sys.stderr = open(os.devnull, 'w')
 
 
-def split(data):
-    data = data.encode('utf-8', 'replace')
-    return [unicode(c, 'utf-8', 'replace') for c in shlex.split(data)]
+def split(data, encoding='utf-8'):
+    if six.PY2:  # shlex cannot split unicode w/o correct encoding in python2
+        data = data.encode(encoding, 'replace')
+        return [c.decode(encoding, 'replace') for c in shlex.split(data)]
+    return shlex.split(data)
 
 
 def time_in(time_str):
@@ -65,9 +76,9 @@ def time_in(time_str):
 
 
 def formathelp(cmdlist):
-    io = cStringIO.StringIO()
+    io = six.StringIO()
 
-    maxlen = max(len(n) for n in zip(*cmdlist)[0])
+    maxlen = max(len(n) for n in list(zip(*cmdlist))[0])
     head_fmt = ' '.join(('%%-%ds' % maxlen, '%s'))
     body_fmt = ' '.join((' ' * maxlen, '%s'))
 

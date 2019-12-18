@@ -69,7 +69,7 @@ class MarkovSQL(db.Database):
         try:
             yield
             self.current_session.commit()
-        except:
+        except Exception:
             self.current_session.rollback()
             raise
         finally:

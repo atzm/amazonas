@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import os
-import urllib
+
+from . import compat
 
 from lxml import html
+from six.moves import urllib
 
 
 _BASE_URL = 'http://j-lyric.net/'
@@ -27,20 +29,6 @@ def _split_url(url):
     return x[-2], None
 
 
-def rank():
-    try:
-        root = html.parse(_BASE_URL).getroot()
-        rank = root.get_element_by_id('sideLyricRank')
-    except (KeyError, IOError):
-        raise StopIteration()
-
-    for x in rank.find_class('title'):
-        title = x.text_content()
-        artist = x.getnext().getnext().text_content()
-        artist_id, title_id = _split_url(x.attrib['href'])
-        yield title, title_id, artist, artist_id
-
-
 def search(title=None, artist=None, lyrics=None, ct=2, ca=2, cl=2, p=1):
     q = {'ct': ct, 'ca': ca, 'cl': cl, 'p': p}
 
@@ -52,7 +40,7 @@ def search(title=None, artist=None, lyrics=None, ct=2, ca=2, cl=2, p=1):
         q.update({'kl': lyrics.encode('utf-8')})
 
     try:
-        url = _BASE_URL + '?'.join(('index.php', urllib.urlencode(q)))
+        url = _BASE_URL + '?'.join(('index.php', urllib.parse.urlencode(q)))
         root = html.parse(url).getroot()
         body = root.get_element_by_id('lyricList')
     except (KeyError, IOError):
@@ -69,8 +57,8 @@ def search(title=None, artist=None, lyrics=None, ct=2, ca=2, cl=2, p=1):
 def get(artist_id, title_id):
     try:
         root = html.parse(_get_url(artist_id, title_id)).getroot()
-        body = root.get_element_by_id('lyricBody')
-        return body.text_content().strip()
+        body = root.get_element_by_id('Lyric')
+        return '\n'.join(' '.join(t.split()) for t in body.itertext())
     except (KeyError, IOError):
         return None
 
@@ -85,11 +73,11 @@ def get_artist_id(name):
 def itertitles(artist_id):
     try:
         root = html.parse(_get_url(artist_id)).getroot()
-        body = root.get_element_by_id('lyricList')
+        body = root.get_element_by_id('cnt')
     except (KeyError, IOError):
         raise StopIteration()
 
-    for x in body.find_class('title'):
+    for x in body.find_class('ttl'):
         x = x.getchildren()[0]
         title = x.text_content()
         _, title_id = _split_url(x.attrib['href'])
@@ -100,9 +88,10 @@ if __name__ == '__main__':
     import sys
     import time
     import errno
+    import codecs
     import random
 
-    artist = unicode(sys.argv[1], sys.getfilesystemencoding())
+    artist = compat.ucode(sys.argv[1], sys.getfilesystemencoding())
     artist_id = get_artist_id(artist)
     time.sleep(random.randint(1, 5))
 
@@ -110,7 +99,7 @@ if __name__ == '__main__':
         raise SystemExit('artist not found')
 
     try:
-        os.mkdir(artist_id, 0755)
+        os.mkdir(artist_id, 0o755)
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
@@ -125,7 +114,7 @@ if __name__ == '__main__':
             print('could not get %s/%s' % (artist_id, title_id))
             continue
 
-        with open(path, 'w') as fp:
-            fp.write(lyrics.encode('utf-8', 'replace'))
+        with codecs.open(path, 'w', encoding='utf-8') as fp:
+            fp.write(lyrics)
 
         print('dumped %s' % path)

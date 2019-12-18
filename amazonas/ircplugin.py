@@ -8,6 +8,8 @@ import contextlib
 
 from . import util
 
+import six
+
 
 _PLUGINS_ACTION = {}
 _PLUGINS_COMMAND = {}
@@ -45,7 +47,7 @@ def getaction(name):
 
 
 def iteractions():
-    return _PLUGINS_ACTION.iteritems()
+    return six.iteritems(_PLUGINS_ACTION)
 
 
 def getcommand(name):
@@ -57,7 +59,7 @@ def getcommand(name):
 
 
 def itercommands():
-    return _PLUGINS_COMMAND.iteritems()
+    return six.iteritems(_PLUGINS_COMMAND)
 
 
 def getevent(name):
@@ -69,7 +71,7 @@ def getevent(name):
 
 
 def iterevents():
-    return _PLUGINS_EVENT.iteritems()
+    return six.iteritems(_PLUGINS_EVENT)
 
 
 def load(path):

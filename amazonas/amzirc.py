@@ -26,6 +26,19 @@ except AttributeError:
     irc.client.Reactor = irc.client.IRC
 
 
+class EncodingSocket(object):
+    def __init__(self, sock):
+        self.sock = sock
+
+    def send(self, data, *args, **kwargs):
+        data = data.decode('utf-8', 'replace')
+        data = data.encode(config.get('irc', 'encode'), 'replace')
+        return self.sock.send(data, *args, **kwargs)
+
+    def __getattr__(self, name):
+        return getattr(self.sock, name)
+
+
 class DecodingLineBuffer(irc.buffer.DecodingLineBuffer):
     @property
     def encoding(self):
@@ -42,15 +55,7 @@ class ServerConnection(irc.client.ServerConnection):
     @irc.functools.save_method_args
     def connect(self, *args, **kwargs):
         def wrapper(sock):
-            orig_sender = sock.send
-
-            def sender(data, *args, **kwargs):
-                data = data.decode('utf-8', 'replace')
-                data = data.encode(config.get('irc', 'encode'), 'replace')
-                return orig_sender(data, *args, **kwargs)
-
-            sock.send = sender
-            return sock
+            return EncodingSocket(sock)
 
         return super(ServerConnection, self).connect(
             connect_factory=irc.connection.Factory(wrapper=wrapper),
@@ -124,8 +129,8 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             if name != 'all':
                 continue
             for evt in events:
-                func = lambda conn, event: evt(self, conn, event)
-                self.connection.add_global_handler('all_events', func, -15)
+                self.connection.add_global_handler(
+                    'all_events', lambda c, e: evt(self, c, e), -15)
 
     def dispatch_event(self, conn, event):
         for handler in ircplugin.getevent(event.type):
@@ -343,7 +348,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
                 data['match'] = re.search(pattern, data['message'])
                 if not data['match']:
                     return False
-        except:
+        except Exception:
             logging.exception('[%s] %s', sect, data)
             return False
 
@@ -373,7 +378,8 @@ def main():
                             datefmt='%Y/%m/%d %H:%M:%S')
 
     def loadmodules(path=None):
-        from . import irchandler    # load default modules
+        # load default modules
+        from . import irchandler  # noqa: F401
 
         if path:
             ircplugin.load(path)

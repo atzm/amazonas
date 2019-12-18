@@ -50,7 +50,7 @@ def values(inst, keys):
 
     try:
         keys = json.loads(keys)
-    except:
+    except Exception:
         flask.abort(400)
     if type(keys) is not list:
         flask.abort(400)

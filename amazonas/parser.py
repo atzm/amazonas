@@ -4,6 +4,8 @@ import string
 import importlib
 import collections
 
+import six
+
 
 PARSERTYPE_MORPH = 'morph'
 _PARSER_CLASS = {}
@@ -18,7 +20,7 @@ def getclass(type_, name=None):
     if name is not None:
         return _PARSER_CLASS[type_][name]
     try:
-        return _PARSER_CLASS[type_].itervalues().next()
+        return next(six.itervalues(_PARSER_CLASS[type_]))
     except (KeyError, StopIteration):
         pass
     return None

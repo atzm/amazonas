@@ -5,14 +5,14 @@ import ssl
 import time
 import json
 import random
-import urllib
-import urllib2
 import logging
 import logging.config
 import argparse
 import threading
 
 import flask
+
+from six.moves import urllib
 
 from . import util
 from . import config
@@ -46,10 +46,10 @@ def post(body):
         ctx = ssl._create_unverified_context()
 
     try:
-        body = urllib.urlencode({'payload': json.dumps(body)})
-        req = urllib2.Request(url, body)
-        urllib2.urlopen(req, context=ctx).read()
-    except:
+        body = urllib.parse.urlencode({'payload': json.dumps(body)})
+        req = urllib.request.Request(url, body)
+        urllib.request.urlopen(req, context=ctx).read()
+    except Exception:
         logging.exception('[post] %s', locals())
 
 
@@ -88,7 +88,7 @@ class EventHandler(object):
 
             return result
 
-        except:
+        except Exception:
             logging.exception('[%s] <%s.%s> %s', sect,
                               func.__module__, func.__name__, self.data)
 
@@ -159,7 +159,7 @@ class EventHandler(object):
                 self.data['match'] = re.search(pattern, self.data['text'])
                 if not self.data['match']:
                     return False
-        except:
+        except Exception:
             logging.exception('[%s] %s', sect, self.data)
             return False
 
@@ -251,7 +251,8 @@ def main():
                             datefmt='%Y/%m/%d %H:%M:%S')
 
     def loadmodules(path=None):
-        from . import mmhandler    # load default modules
+        # load default modules
+        from . import mmhandler  # noqa: F401
 
         if path:
             mmplugin.load(path)

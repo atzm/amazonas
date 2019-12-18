@@ -9,6 +9,8 @@ from . import db
 from . import parser
 from . import config
 
+from six.moves import range
+
 
 def getdb(type_, instance):
     d = config.as_dict(':'.join(('db', type_, instance)))
@@ -58,7 +60,7 @@ class MarkovTable(object):
             with self.edb.transaction():
                 self.edb.append(entrypoint[0], entrypoint)
 
-        self.maxchain = (self.maxchain + len(itemlist)) / 2
+        self.maxchain = (self.maxchain + len(itemlist)) // 2
 
     def run(self, entrypoint=None):
         with self.edb.transaction():
@@ -73,7 +75,7 @@ class MarkovTable(object):
         data = items[:]
 
         with self.db.transaction():
-            for x in xrange(self.maxchain):
+            for x in range(self.maxchain):
                 item = self.db.getrand(tuple(items))
                 if item is None:
                     break
@@ -131,19 +133,19 @@ class TextGenerator(object):
         if len(parsed) <= self.markov.level:
             return
 
-        self.markov.learn(zip(*parsed)[0])
+        self.markov.learn(list(zip(*parsed))[0])
         self.entrypoint.extend(self.parser.entrypoints(parsed))
         self.history.append(text)
 
         for line in self.parser.split(parsed):
             if not line:
                 continue
-            wordclass = zip(*zip(*line)[1])[0]
+            wordclass = list(zip(*list(zip(*line))[1]))[0]
             self.update_score_threshold(self.score(wordclass))
             self.wordclass.append(wordclass)
 
     def run(self, entrypoint=None):
-        for x in xrange(self.nr_retry):
+        for x in range(self.nr_retry):
             if entrypoint:
                 ep = entrypoint
             elif self.entrypoint:
@@ -153,7 +155,7 @@ class TextGenerator(object):
 
             try:
                 text = ''.join(self.markov.run(ep)).strip()
-            except:
+            except Exception:
                 logging.exception('failed to generate a text (%d)', x)
                 continue
             if not text:
@@ -181,7 +183,8 @@ class TextGenerator(object):
         if not lines:
             return -1
 
-        score = sum(self.score(zip(*zip(*line)[1])[0]) for line in lines)
+        score = sum(self.score(list(zip(*list(zip(*line))[1]))[0])
+                    for line in lines)
         return score / len(lines)
 
     def score(self, wordclass):
@@ -203,16 +206,16 @@ class TextGenerator(object):
     def distance(a, b, op=operator.eq):
         la = len(a) + 1
         lb = len(b) + 1
-        m = [[0] * lb for i in xrange(la)]
+        m = [[0] * lb for i in range(la)]
 
-        for i in xrange(la):
+        for i in range(la):
             m[i][0] = i
 
-        for j in xrange(lb):
+        for j in range(lb):
             m[0][j] = j
 
-        for i in xrange(1, la):
-            for j in xrange(1, lb):
+        for i in range(1, la):
+            for j in range(1, lb):
                 x = int(not op(a[i - 1], b[j - 1]))
                 m[i][j] = min(m[i - 1][j] + 1,
                               m[i][j - 1] + 1,

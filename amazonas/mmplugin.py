@@ -6,6 +6,8 @@ import glob
 import importlib
 import contextlib
 
+import six
+
 from . import util
 
 
@@ -28,7 +30,7 @@ def getaction(name):
 
 
 def iteractions():
-    return _PLUGINS_ACTION.iteritems()
+    return six.iteritems(_PLUGINS_ACTION)
 
 
 def load(path):

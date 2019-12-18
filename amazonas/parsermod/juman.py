@@ -3,8 +3,7 @@
 import os.path
 import subprocess
 
-from .. import util
-from .. import parser
+from .. import util, parser
 
 
 @parser.parserclass(parser.PARSERTYPE_MORPH)
@@ -15,11 +14,9 @@ class Juman(parser.Parser):
         u'形容詞':   ('*',),
         u'連体詞':   ('*',),
         u'接続詞':   ('*',),
-        u'指示詞':   (u'名詞形態指示詞', u'連体詞形態指示詞',
-                      u'副詞形態指示詞'),
+        u'指示詞':   (u'名詞形態指示詞', u'連体詞形態指示詞', u'副詞形態指示詞'),
         u'感動詞':   ('*',),
-        u'名詞':     (u'普通名詞', u'固有名詞', u'組織名', u'地名', u'人名',
-                      u'サ変名詞', u'数詞', u'時相名詞'),
+        u'名詞':     (u'普通名詞', u'固有名詞', u'組織名', u'地名', u'人名', u'サ変名詞', u'数詞', u'時相名詞'),  # noqa: E501
         u'接頭辞':   (u'名詞接頭辞', u'動詞接頭辞', u'ナ形容詞接頭辞'),
         u'未定義語': (u'カタカナ', u'アルファベット'),
     }
@@ -32,8 +29,7 @@ class Juman(parser.Parser):
         u'名詞':   (u'形式名詞',),
         u'動詞':   ('*',),
         u'助詞':   (u'終助詞',),
-        u'接尾辞': (u'形容詞性述語接尾辞', u'形容詞性名詞接尾辞',
-                    u'動詞性接尾辞'),
+        u'接尾辞': (u'形容詞性述語接尾辞', u'形容詞性名詞接尾辞', u'動詞性接尾辞'),
         u'特殊':   (u'句点', u'記号'),
     }
 
@@ -81,11 +77,19 @@ class Juman(parser.Parser):
                 continue
 
             p = self.getproc(encoded_text)
-            p.stdin.write(encoded_text)
-            p.stdin.flush()
+
+            if hasattr(p.stdin, 'buffer'):
+                stdin = p.stdin.buffer
+                stdout = p.stdout.buffer
+            else:
+                stdin = p.stdin
+                stdout = p.stdout
+
+            stdin.write(encoded_text)
+            stdin.flush()
 
             while True:
-                line = unicode(p.stdout.readline(), self.encode)
+                line = util.compat.ucode(stdout.readline(), self.encode)
                 line = line.rstrip('\t\r\n')
                 if not line or line == 'EOS':
                     break

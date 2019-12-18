@@ -23,11 +23,13 @@ setup(
         'flask>=0.10.1',
         'irc>=8.9.1,<=16.3',
         'lxml>=3.3.5',
+        'six',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: BSD License',
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.6',
     ],
 )

@@ -7,6 +7,7 @@ import sys
 import json
 import glob
 import fcntl
+import codecs
 import string
 import getopt
 import inspect
@@ -15,6 +16,8 @@ import readline
 import traceback
 
 from . import util
+
+import six
 
 
 class Command(object):
@@ -142,9 +145,9 @@ class ConsoleCommand(Command):
             elif opt == '-c':
                 encode = optarg
 
-        with open(util.abspath(args[0]), 'rU') as fp:
+        with codecs.open(util.abspath(args[0]), 'rU', encode) as fp:
             fcntl.flock(fp.fileno(), fcntl.LOCK_SH)
-            text = unicode(fp.read().strip(), encode)
+            text = util.compat.ucode(fp.read().strip(), encode)
 
         if raw:
             text = [text]
@@ -251,7 +254,8 @@ def main():
 
     while True:
         try:
-            line = unicode(raw_input('%s> ' % name).strip(), fsenc)
+            line = util.compat.ucode(
+                six.moves.input('%s> ' % name).strip(), fsenc)
             if line:
                 cmd.run(util.split(line))
 
@@ -267,7 +271,7 @@ def main():
         except KeyboardInterrupt:
             print()
 
-        except:
+        except Exception:
             traceback.print_exc()
 
 

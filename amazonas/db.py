@@ -5,6 +5,8 @@ import importlib
 import contextlib
 import collections
 
+import six
+
 
 DBTYPE_MARKOV = 'markov'
 DBTYPE_ENTRYPOINT = 'entrypoint'
@@ -20,7 +22,7 @@ def getclass(type_, name=None):
     if name is not None:
         return _DB_CLASS[type_][name]
     try:
-        return _DB_CLASS[type_].itervalues().next()
+        return next(six.itervalues(_DB_CLASS[type_]))
     except (KeyError, StopIteration):
         pass
     return None
