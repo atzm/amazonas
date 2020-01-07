@@ -46,7 +46,9 @@ def post(body):
         ctx = ssl._create_unverified_context()
 
     try:
-        body = urllib.parse.urlencode({'payload': json.dumps(body)})
+        body = urllib.parse.urlencode({
+            'payload': json.dumps(body).encode('utf-8'),
+        })
         req = urllib.request.Request(url, body)
         urllib.request.urlopen(req, context=ctx).read()
     except Exception:
