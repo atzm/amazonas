@@ -10,10 +10,8 @@ import functools
 import contextlib
 
 import irc.bot
-import irc.buffer
 import irc.client
 import irc.schedule
-import irc.functools
 import irc.connection
 
 from . import util
@@ -39,7 +37,7 @@ class EncodingSocket(object):
         return getattr(self.sock, name)
 
 
-class DecodingLineBuffer(irc.buffer.DecodingLineBuffer):
+class DecodingLineBuffer(irc.client.buffer.DecodingLineBuffer):
     @property
     def encoding(self):
         return config.get('irc', 'encode')
@@ -52,22 +50,17 @@ class DecodingLineBuffer(irc.buffer.DecodingLineBuffer):
 class ServerConnection(irc.client.ServerConnection):
     buffer_class = DecodingLineBuffer
 
-    @irc.functools.save_method_args
-    def connect(self, *args, **kwargs):
+    @property
+    def connect(self):
         def wrapper(sock):
             return EncodingSocket(sock)
-
-        return super(ServerConnection, self).connect(
-            connect_factory=irc.connection.Factory(wrapper=wrapper),
-            *args, **kwargs)
+        connect = super(ServerConnection, self).connect
+        factory = irc.connection.Factory(wrapper=wrapper)
+        return functools.partial(connect, connect_factory=factory)
 
 
 class Reactor(irc.client.Reactor):
-    def server(self):
-        c = ServerConnection(self)
-        with self.mutex:
-            self.connections.append(c)
-        return c
+    connection_class = ServerConnection
 
     def register_schedule(self, interval, func, *args, **kwargs):
         partial = functools.partial(func, *args, **kwargs)
