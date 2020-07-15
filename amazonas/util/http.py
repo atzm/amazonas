@@ -20,9 +20,10 @@ def getmessage(info):
 
 
 class HTML(object):
-    def __init__(self, url, timeout):
+    def __init__(self, url, timeout, headers={}):
         self.url = url
         self.timeout = timeout
+        self.headers = headers
         self.content = None
 
     @staticmethod
@@ -34,7 +35,9 @@ class HTML(object):
     @property
     def root(self):
         if not self.content:
-            with contextlib.closing(urllib.request.urlopen(self.url, timeout=self.timeout)) as f:  # noqa: E501
+            req = urllib.request.Request(url=self.url, headers=self.headers)
+            arg = {'url': req, 'timeout': self.timeout}
+            with contextlib.closing(urllib.request.urlopen(**arg)) as f:
                 self.content = html.parse(f, self.getparser(f))
         return self.content.getroot()
 

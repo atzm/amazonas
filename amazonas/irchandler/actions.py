@@ -2,6 +2,7 @@
 
 import re
 import time
+import base64
 import random
 import logging
 import inspect
@@ -198,9 +199,19 @@ def html(ircbot, conf, conn, event, data):
         return None
 
     url = data['match'].group(1)
-    timeout = float(conf.get('timeout', 2.0))
     xpath = conf['xpath']
-    content = util.http.HTML(url, timeout).getcontent(xpath)
+    timeout = float(conf.get('timeout', 2.0))
+    username = conf.get('username')
+    password = conf.get('password')
+
+    if None not in [username, password]:
+        auths = '%s:%s' % (username, password)
+        authb = base64.b64encode(auths.encode('utf-8'))
+        headers = {'Authorization': 'Basic %s' % authb.decode('utf-8')}
+    else:
+        headers = {}
+
+    content = util.http.HTML(url, timeout, headers=headers).getcontent(xpath)
 
     if content:
         content.update(url=url)
