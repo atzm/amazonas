@@ -21,7 +21,7 @@ setup(
     platforms=['Linux'],
     install_requires=[
         'flask>=0.10.1',
-        'irc==18',
+        'irc>=18',
         'lxml>=3.3.5',
         'six',
     ],
